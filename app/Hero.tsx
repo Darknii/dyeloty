@@ -44,16 +44,16 @@ export default function Hero({ language }: Props) {
         <div className="flex justify-center">
           <div className="w-full max-w-[700px]">
 
-            <div className="flex rounded-full border border-[#ECE7DF] bg-white p-2 shadow-sm">
+            <div className="flex flex-col gap-2 rounded-3xl border border-[#ECE7DF] bg-white p-2 shadow-sm sm:flex-row sm:items-center sm:rounded-full">
 
               <input
                 type="text"
                 placeholder={t.placeholder}
-                className="min-w-0 flex-1 bg-transparent px-5 py-2 text-sm text-[#8A8A8A] outline-none md:px-10 md:text-lg"
+                className="min-w-0 flex-1 bg-transparent px-5 py-3 text-sm text-[#8A8A8A] outline-none md:px-10 md:text-lg"
               />
 
               <button
-                className="rounded-full bg-[#90A885] px-6 py-3 text-base text-white transition hover:bg-[#809671] md:px-12 md:py-4 md:text-lg"
+                className="w-full rounded-full bg-[#90A885] px-6 py-3 text-base text-white transition hover:bg-[#809671] sm:w-auto md:px-12 md:py-4 md:text-lg"
               >
                 {t.button}
               </button>
