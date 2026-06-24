@@ -1,4 +1,8 @@
-import Header from "./Header";
+import { redirect } from "next/navigation";
+
+export default function Home() {
+  redirect("/pl");
+}
 
 export default function Home() {
   return (
