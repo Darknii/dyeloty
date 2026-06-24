@@ -24,12 +24,12 @@ export default function Hero({ language }: Props) {
         };
 
   return (
-    <section className="py-0 md:py-6">
-      <div className="grid items-center gap-0 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+    <section className="py-0">
+      <div className="grid items-center gap-2 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
 
         {/* Logo */}
         <div>
-          <div className="relative mx-auto -mt-4 h-[280px] w-full max-w-[700px] lg:mx-0 lg:mt-0 lg:h-[300px]">
+          <div className="relative mx-auto h-[140px] w-full max-w-[700px] lg:mx-0 lg:h-[260px]">
             <Image
               src={logo}
               alt="Dyeloty"
