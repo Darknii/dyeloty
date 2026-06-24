@@ -38,9 +38,9 @@ export default function Header({ language }: Props) {
 
   return (
     <header className="border-b border-[#E3DDD2]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between py-3">
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 py-3 md:flex-row md:items-center md:justify-between">
 
-        <div className="flex items-center gap-6 text-sm text-[#1F2A24]">
+        <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-[#1F2A24] md:justify-start">
 
           <a
             href="/pl"
@@ -76,13 +76,15 @@ export default function Header({ language }: Props) {
             href="#"
             className="rounded-full bg-[#90A885] px-4 py-2 text-white transition hover:bg-[#809671]"
           >
-            ☕ {language === "pl" ? "Wesprzyj Dyeloty" : "Support Dyeloty"}
+            ☕ {language === "pl"
+              ? "Wesprzyj Dyeloty"
+              : "Support Dyeloty"}
           </a>
 
         </div>
 
         {session?.user ? (
-          <div className="flex items-center gap-5 text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm md:justify-end">
 
             <span className="text-[#7E7E7E]">
               {session.user.user_metadata?.name ??
@@ -100,7 +102,7 @@ export default function Header({ language }: Props) {
         ) : (
           <button
             onClick={handleLogin}
-            className="rounded-full border border-[#DCE5D4] bg-[#F5F8F1] px-5 py-2 text-sm text-[#1F2A24] transition hover:border-[#90A885]"
+            className="w-full rounded-full border border-[#DCE5D4] bg-[#F5F8F1] px-5 py-2 text-sm text-[#1F2A24] transition hover:border-[#90A885] md:w-auto"
           >
             {language === "pl"
               ? "Zaloguj przez Google"

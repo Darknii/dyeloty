@@ -25,36 +25,35 @@ export default function Hero({ language }: Props) {
 
   return (
     <section className="py-8">
-      <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
 
         {/* Logo */}
         <div>
-          <div className="relative h-[260px] w-full">
+          <div className="relative mx-auto h-[180px] w-full max-w-[500px] lg:mx-0 lg:h-[260px]">
             <Image
               src={logo}
               alt="Dyeloty"
               fill
               priority
-              className="object-contain object-left"
+              className="object-contain lg:object-left"
             />
           </div>
         </div>
 
         {/* Wyszukiwarka */}
-        <div className="flex items-center justify-center">
-
+        <div className="flex justify-center">
           <div className="w-full max-w-[700px]">
 
-            <div className="flex items-center rounded-full border border-[#ECE7DF] bg-white p-2 shadow-sm">
+            <div className="flex rounded-full border border-[#ECE7DF] bg-white p-2 shadow-sm">
 
               <input
                 type="text"
                 placeholder={t.placeholder}
-                className="flex-1 bg-transparent px-10 py-2 text-lg text-[#8A8A8A] outline-none"
+                className="min-w-0 flex-1 bg-transparent px-5 py-2 text-sm text-[#8A8A8A] outline-none md:px-10 md:text-lg"
               />
 
               <button
-                className="rounded-full bg-[#90A885] px-12 py-4 text-lg text-white transition hover:bg-[#809671]"
+                className="rounded-full bg-[#90A885] px-6 py-3 text-base text-white transition hover:bg-[#809671] md:px-12 md:py-4 md:text-lg"
               >
                 {t.button}
               </button>
@@ -62,7 +61,6 @@ export default function Hero({ language }: Props) {
             </div>
 
           </div>
-
         </div>
 
       </div>
