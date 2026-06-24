@@ -24,12 +24,12 @@ export default function Hero({ language }: Props) {
         };
 
   return (
-    <section className="py-8">
-      <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+    <section className="py-4 md:py-8">
+      <div className="grid items-center gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
 
         {/* Logo */}
         <div>
-          <div className="relative mx-auto h-[180px] w-full max-w-[500px] lg:mx-0 lg:h-[260px]">
+          <div className="relative mx-auto h-[220px] w-full max-w-[600px] lg:mx-0 lg:h-[260px]">
             <Image
               src={logo}
               alt="Dyeloty"
@@ -41,7 +41,7 @@ export default function Hero({ language }: Props) {
         </div>
 
         {/* Wyszukiwarka */}
-        <div className="flex justify-center">
+        <div className="flex justify-center lg:justify-end">
           <div className="w-full max-w-[700px]">
 
             <div className="flex flex-col gap-2 rounded-3xl border border-[#ECE7DF] bg-white p-2 shadow-sm sm:flex-row sm:items-center sm:rounded-full">
