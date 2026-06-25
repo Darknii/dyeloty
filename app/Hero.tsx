@@ -36,16 +36,17 @@ export default function Hero({ language }: Props) {
         {/* LOGO */}
         <div className="flex justify-center lg:justify-start">
 
-          {/* Mobile */}
-          <div className="relative block h-[360px] w-[300px] md:hidden">
-            <Image
-              src={mobileLogo}
-              alt="Dyeloty"
-              fill
-              priority
-              className="object-contain"
-            />
-          </div>
+       {/* MOBILE */}
+<div className="flex justify-center md:hidden">
+  <Image
+    src={mobileLogo}
+    alt="Dyeloty"
+    width={300}
+    height={450}
+    priority
+    className="h-auto w-[300px]"
+  />
+</div>
 
           {/* Desktop */}
           <div className="relative hidden h-[260px] w-full max-w-[700px] md:block">
