@@ -29,14 +29,15 @@ export default function Hero({ language }: Props) {
         };
 
   return (
-    <section className="py-2 md:py-6">
-      <div className="grid items-center gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+    <section className="pt-0 pb-4 md:py-8">
 
-        {/* Logo */}
-        <div>
+      <div className="grid items-center gap-0 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+
+        {/* LOGO */}
+        <div className="flex justify-center lg:justify-start">
 
           {/* Mobile */}
-          <div className="relative mx-auto h-[320px] w-full max-w-[340px] md:hidden">
+          <div className="relative block h-[360px] w-[300px] md:hidden">
             <Image
               src={mobileLogo}
               alt="Dyeloty"
@@ -47,20 +48,21 @@ export default function Hero({ language }: Props) {
           </div>
 
           {/* Desktop */}
-          <div className="relative hidden h-[260px] w-full lg:block">
+          <div className="relative hidden h-[260px] w-full max-w-[700px] md:block">
             <Image
               src={desktopLogo}
               alt="Dyeloty"
               fill
               priority
-              className="object-contain object-left"
+              className="object-contain lg:object-left"
             />
           </div>
 
         </div>
 
-        {/* Search */}
+        {/* SEARCH */}
         <div className="flex justify-center lg:justify-end">
+
           <div className="w-full max-w-[700px]">
 
             <div className="flex flex-col gap-2 rounded-3xl border border-[#ECE7DF] bg-white p-2 shadow-sm sm:flex-row sm:items-center sm:rounded-full">
@@ -80,9 +82,11 @@ export default function Hero({ language }: Props) {
             </div>
 
           </div>
+
         </div>
 
       </div>
+
     </section>
   );
 }
