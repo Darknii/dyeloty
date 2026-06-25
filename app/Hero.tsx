@@ -5,10 +5,15 @@ type Props = {
 };
 
 export default function Hero({ language }: Props) {
-  const logo =
+  const desktopLogo =
     language === "pl"
-      ? "/images/logo-pl.svg"
-      : "/images/logo-en.svg";
+      ? "/images/logos/logo-pl.svg"
+      : "/images/logos/logo-en.svg";
+
+  const mobileLogo =
+    language === "pl"
+      ? "/images/logos/logo-pl-mobile.png"
+      : "/images/logos/logo-en-mobile.png";
 
   const t =
     language === "pl"
@@ -30,17 +35,29 @@ export default function Hero({ language }: Props) {
         {/* Logo */}
         <div>
           <div className="relative mx-auto h-[140px] w-full max-w-[700px] lg:mx-0 lg:h-[260px]">
+
+            {/* Mobile */}
             <Image
-              src={logo}
+              src={mobileLogo}
               alt="Dyeloty"
               fill
               priority
-              className="object-contain lg:object-left"
+              className="block object-contain md:hidden"
             />
+
+            {/* Desktop */}
+            <Image
+              src={desktopLogo}
+              alt="Dyeloty"
+              fill
+              priority
+              className="hidden object-contain md:block lg:object-left"
+            />
+
           </div>
         </div>
 
-        {/* Wyszukiwarka */}
+        {/* Search */}
         <div className="flex justify-center lg:justify-end">
           <div className="w-full max-w-[700px]">
 
