@@ -29,32 +29,34 @@ export default function Hero({ language }: Props) {
         };
 
   return (
-    <section className="py-0">
-      <div className="grid items-center gap-2 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+    <section className="py-2 md:py-6">
+      <div className="grid items-center gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
 
         {/* Logo */}
         <div>
-          <div className="relative mx-auto h-[140px] w-full max-w-[700px] lg:mx-0 lg:h-[260px]">
 
-            {/* Mobile */}
+          {/* Mobile */}
+          <div className="relative mx-auto h-[320px] w-full max-w-[340px] md:hidden">
             <Image
               src={mobileLogo}
               alt="Dyeloty"
               fill
               priority
-              className="block object-contain md:hidden"
+              className="object-contain"
             />
+          </div>
 
-            {/* Desktop */}
+          {/* Desktop */}
+          <div className="relative hidden h-[260px] w-full lg:block">
             <Image
               src={desktopLogo}
               alt="Dyeloty"
               fill
               priority
-              className="hidden object-contain md:block lg:object-left"
+              className="object-contain object-left"
             />
-
           </div>
+
         </div>
 
         {/* Search */}
