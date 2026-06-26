@@ -2,7 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Eye, Loader2, Package, Trash2, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  Eye,
+  Loader2,
+  Package,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 
@@ -25,6 +34,7 @@ export default function AccountPage() {
   const [isListingsLoading, setIsListingsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
   const loadListings = useCallback(async (userId: string) => {
     setIsListingsLoading(true);
@@ -108,9 +118,44 @@ export default function AccountPage() {
     await loadListings(session.user.id);
   }
 
+  async function handleMarkAsSold(listingId: string) {
+    if (!session?.user) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Czy na pewno chcesz oznaczyć to ogłoszenie jako sprzedane?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setUpdatingStatusId(listingId);
+    setErrorMessage("");
+
+    const { error } = await supabase
+      .from("listings")
+      .update({ status: "sold" })
+      .eq("id", listingId)
+      .eq("user_id", session.user.id);
+
+    setUpdatingStatusId(null);
+
+    if (error) {
+      setErrorMessage(error.message || "Nie udało się zmienić statusu ogłoszenia.");
+      return;
+    }
+
+    await loadListings(session.user.id);
+  }
+
   if (isAuthLoading) {
     return (
       <main className="min-h-screen bg-[#F7F4FB] px-4 py-12 text-[#17142E]">
+        <div className="mx-auto mb-5 max-w-5xl">
+          <BackHomeLink />
+        </div>
         <section className="mx-auto max-w-5xl rounded-2xl border border-[#E8E1F0] bg-white p-8 shadow-[0_18px_55px_rgba(51,36,82,0.09)]">
           <div className="flex items-center gap-3 text-[#6E6582]">
             <Loader2 className="animate-spin text-[#7438B7]" size={22} />
@@ -124,6 +169,9 @@ export default function AccountPage() {
   if (!session?.user) {
     return (
       <main className="min-h-screen bg-[#F7F4FB] px-4 py-12 text-[#17142E]">
+        <div className="mx-auto mb-5 max-w-2xl">
+          <BackHomeLink />
+        </div>
         <section className="mx-auto max-w-2xl rounded-2xl border border-[#E8E1F0] bg-white p-8 text-center shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-10">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F4EEF9] text-[#7438B7]">
             <UserRound size={25} />
@@ -146,6 +194,10 @@ export default function AccountPage() {
   return (
     <main className="min-h-screen bg-[#F7F4FB] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
       <section className="mx-auto max-w-6xl">
+        <div className="mb-5">
+          <BackHomeLink />
+        </div>
+
         <div className="rounded-2xl border border-[#E8E1F0] bg-white p-6 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#7438B7]">
             Dyeloty
@@ -196,6 +248,12 @@ export default function AccountPage() {
               <p className="mt-2 text-sm text-[#6E6582]">
                 Po dodaniu włóczki pojawi się tutaj.
               </p>
+              <Link
+                href="/add-listing/pl"
+                className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#7438B7] px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.24)] transition hover:bg-[#622CA2]"
+              >
+                Dodaj pierwsze ogłoszenie
+              </Link>
             </div>
           ) : (
             <div className="mt-6 grid gap-4">
@@ -211,8 +269,10 @@ export default function AccountPage() {
                           {listing.brand ?? "-"}
                         </h3>
                         {listing.status ? (
-                          <span className="rounded-full bg-[#F4EEF9] px-3 py-1 text-xs font-semibold text-[#7438B7]">
-                            {listing.status === "active" ? "Aktywne" : listing.status}
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(listing.status)}`}
+                          >
+                            {getStatusLabel(listing.status)}
                           </span>
                         ) : null}
                       </div>
@@ -236,7 +296,7 @@ export default function AccountPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 sm:flex lg:justify-end">
+                    <div className="grid gap-2 sm:flex lg:justify-end">
                       <Link
                         href={`/listing/${listing.id}?from=account`}
                         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]"
@@ -244,6 +304,21 @@ export default function AccountPage() {
                         <Eye size={17} />
                         Zobacz
                       </Link>
+                      {listing.status === "active" ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleMarkAsSold(listing.id)}
+                          disabled={updatingStatusId === listing.id}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {updatingStatusId === listing.id ? (
+                            <Loader2 className="animate-spin" size={17} />
+                          ) : (
+                            <CheckCircle2 size={17} />
+                          )}
+                          Oznacz jako sprzedane
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => void handleDelete(listing.id)}
@@ -269,6 +344,18 @@ export default function AccountPage() {
   );
 }
 
+function BackHomeLink() {
+  return (
+    <Link
+      href="/"
+      className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#6C5A86] shadow-[0_10px_28px_rgba(51,36,82,0.07)] transition hover:text-[#7438B7]"
+    >
+      <ArrowLeft size={17} />
+      Wróć do strony głównej
+    </Link>
+  );
+}
+
 function AccountFact({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="min-w-0 rounded-xl bg-[#FAF8FC] p-3">
@@ -278,6 +365,34 @@ function AccountFact({ label, value }: { label: string; value: string | null }) 
       <dd className="mt-1 truncate font-semibold text-[#332B4D]">{value ?? "-"}</dd>
     </div>
   );
+}
+
+function getStatusLabel(status: string | null) {
+  if (status === "active") {
+    return "Aktywne";
+  }
+
+  if (status === "sold") {
+    return "Sprzedane";
+  }
+
+  if (status === "found") {
+    return "Znalezione";
+  }
+
+  if (status === "inactive") {
+    return "Nieaktywne";
+  }
+
+  return status ?? "-";
+}
+
+function getStatusClassName(status: string | null) {
+  if (status === "active") {
+    return "bg-[#DDF7E9] text-[#287A4D]";
+  }
+
+  return "bg-[#F4EEF9] text-[#7438B7]";
 }
 
 function formatDate(value: string | null) {
