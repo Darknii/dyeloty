@@ -1,10 +1,17 @@
-import { Suspense } from "react";
+import {
+  Hash,
+  Heart,
+  MapPin,
+  Palette,
+  Search,
+  ShieldCheck,
+  Spool,
+  UsersRound,
+} from "lucide-react";
+import Image from "next/image";
+import { Suspense, type ReactNode } from "react";
 import Header from "./Header";
-import Hero from "./Hero";
-import HowItWorks from "./HowItWorks";
-import Stats from "./Stats";
 import Listings, { ListingsLoading } from "./Listings";
-import SupportDyeloty from "./SupportDyeloty";
 import Footer from "./Footer";
 
 type Props = {
@@ -15,39 +22,262 @@ export default function HomePage({ language }: Props) {
   const t =
     language === "pl"
       ? {
-          recent: "Ostatnio dodane",
+          titleOne: "Znajdź włóczkę.",
+          titleTwoBefore: "Ten sam ",
+          colorWord: "kolor",
+          titleThreeBefore: "Ta sama ",
+          lotWord: "partia",
+          description:
+            "Dyeloty pomaga dziewiarkom znaleźć włóczki z tej samej partii farbowania.",
+          descriptionTwo: "Szybko. Wygodnie. Z miłości do dziergania.",
+          heroPhoto: "Miejsce na zdjęcie włóczek",
+          brand: "Marka",
+          brandPlaceholder: "np. Drops Air",
+          color: "Kolor",
+          colorPlaceholder: "np. beżowy",
+          dyelot: "Dye lot / Partia",
+          dyelotPlaceholder: "np. 1234",
+          location: "Lokalizacja",
+          locationPlaceholder: "Cała Polska",
+          search: "Szukaj",
+          popular: "Popularne wyszukiwania:",
+          recent: "Najnowsze ogłoszenia",
+          seeAll: "Zobacz wszystkie",
+          statsListings: "Ogłoszeń włóczek",
+          statsListingsSub: "z różnych marek",
+          statsLots: "Znalezione partie",
+          statsLotsSub: "dzięki Dyelotom",
+          statsUsers: "Zadowolonych dziewiarek",
+          statsUsersSub: "dołączyło do nas",
+          statsSafe: "Bezpieczne zakupy",
+          statsSafeSub: "i kontakt ze sprzedającym",
         }
       : {
-          recent: "Recently Added",
+          titleOne: "Find yarn.",
+          titleTwoBefore: "Same ",
+          colorWord: "color",
+          titleThreeBefore: "Same ",
+          lotWord: "dye lot",
+          description:
+            "Dyeloty is a place for makers looking for yarn from the same dye lot.",
+          descriptionTwo: "Fast. Simple. Made with love for knitting.",
+          heroPhoto: "Yarn photo area",
+          brand: "Brand",
+          brandPlaceholder: "e.g. Drops Air",
+          color: "Color",
+          colorPlaceholder: "e.g. beige",
+          dyelot: "Dye lot",
+          dyelotPlaceholder: "e.g. 1234",
+          location: "Location",
+          locationPlaceholder: "All Poland",
+          search: "Search",
+          popular: "Popular searches:",
+          recent: "Newest listings",
+          seeAll: "See all",
+          statsListings: "Yarn listings",
+          statsListingsSub: "from many brands",
+          statsLots: "Matched lots",
+          statsLotsSub: "thanks to Dyeloty",
+          statsUsers: "Happy makers",
+          statsUsersSub: "joined us",
+          statsSafe: "Safe buying",
+          statsSafeSub: "with seller contact",
         };
 
+  const chips = ["Drops Air", "Alize Puffy", "Merino Extra Fine", "Baby Merino", "Kokonki"];
+
   return (
-    <main className="min-h-screen bg-[#F6F5F1] text-[#1F2A24]">
-      <div className="mx-auto max-w-7xl px-8">
+    <main className="min-h-screen overflow-x-hidden bg-[#F7F4FB] text-[#17142E]">
+      <Header language={language} />
 
-        <Header language={language} />
+      <section className="relative overflow-hidden border-b border-[#ECE5F3] bg-[linear-gradient(105deg,#FBF9FF_0%,#F8F3FC_45%,#F4EFF8_100%)]">
+        <div className="mx-auto grid max-w-[1280px] gap-7 px-4 pb-6 pt-8 sm:px-6 sm:pb-8 sm:pt-12 lg:grid-cols-[0.53fr_0.47fr] lg:px-8 lg:pb-0 lg:pt-14">
+          <div className="relative z-10 lg:pb-36">
+            <h1 className="max-w-[720px] text-[40px] font-bold leading-[1.12] tracking-normal text-[#17142E] sm:text-6xl lg:text-[64px]">
+              {t.titleOne}
+              <br />
+              {t.titleTwoBefore}
+              <span className="text-[#C83EBF]">{t.colorWord}</span>.
+              <br />
+              {t.titleThreeBefore}
+              <span className="text-[#7438B7]">{t.lotWord}</span>.
+            </h1>
 
-        <Hero language={language} />
+            <p className="mt-5 max-w-[590px] text-base leading-7 text-[#514A67] sm:text-lg">
+              {t.description}
+              <br />
+              {t.descriptionTwo}
+            </p>
+          </div>
 
-        <HowItWorks language={language} />
+          <HeroPhotoPlaceholder label={t.heroPhoto} />
+        </div>
+      </section>
 
-        <Stats language={language} />
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        <section className="relative z-20 -mt-1 sm:-mt-4 lg:-mt-24">
+          <div className="rounded-2xl border border-[#E6DDEC] bg-white p-4 shadow-[0_18px_55px_rgba(51,36,82,0.11)] sm:p-6">
+            <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr_0.95fr_auto] lg:items-end">
+              <SearchField
+                label={t.brand}
+                placeholder={t.brandPlaceholder}
+                icon={<Search size={17} />}
+              />
+              <SearchField
+                label={t.color}
+                placeholder={t.colorPlaceholder}
+                icon={<Palette size={17} />}
+              />
+              <SearchField
+                label={t.dyelot}
+                placeholder={t.dyelotPlaceholder}
+                icon={<Hash size={17} />}
+              />
+              <SearchField
+                label={t.location}
+                placeholder={t.locationPlaceholder}
+                icon={<MapPin size={17} />}
+              />
 
-        <section className="mt-20">
-          <h2 className="text-3xl font-semibold">
-            {t.recent}
-          </h2>
+              <button className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#7438B7] px-8 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.28)] transition hover:bg-[#622CA2] lg:w-[156px]">
+                <Search size={18} />
+                {t.search}
+              </button>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-[#6E6582]">
+              <span className="mr-2 font-medium">{t.popular}</span>
+              {chips.map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full bg-[#F2EFF8] px-4 py-2 font-medium text-[#342E47]"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-5 shadow-[0_12px_38px_rgba(51,36,82,0.08)] sm:p-6">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <StatItem
+              icon={<Spool size={28} />}
+              value="1 248"
+              title={t.statsListings}
+              subtitle={t.statsListingsSub}
+            />
+            <StatItem
+              icon={<Heart size={30} />}
+              value="3 892"
+              title={t.statsLots}
+              subtitle={t.statsLotsSub}
+            />
+            <StatItem
+              icon={<UsersRound size={30} />}
+              value="2 156"
+              title={t.statsUsers}
+              subtitle={t.statsUsersSub}
+            />
+            <StatItem
+              icon={<ShieldCheck size={31} />}
+              value="100%"
+              title={t.statsSafe}
+              subtitle={t.statsSafeSub}
+            />
+          </div>
+        </section>
+
+        <section id="listings" className="pb-14 pt-9 sm:pb-20 sm:pt-11">
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold tracking-normal text-[#17142E]">
+              {t.recent}
+            </h2>
+            <a
+              href="#listings"
+              className="hidden min-h-11 items-center gap-2 text-sm font-bold text-[#7438B7] sm:inline-flex"
+            >
+              {t.seeAll}
+              <span aria-hidden="true">→</span>
+            </a>
+          </div>
 
           <Suspense fallback={<ListingsLoading />}>
             <Listings language={language} />
           </Suspense>
         </section>
-
-        <SupportDyeloty language={language} />
-
       </div>
 
       <Footer language={language} />
     </main>
+  );
+}
+
+function SearchField({
+  label,
+  placeholder,
+  icon,
+}: {
+  label: string;
+  placeholder: string;
+  icon: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#514A67]">
+        <span className="text-[#7A3FC5]">{icon}</span>
+        {label}
+      </span>
+      <input
+        type="text"
+        placeholder={placeholder}
+        className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition placeholder:text-[#9489AA] focus:border-[#A875D2]"
+      />
+    </label>
+  );
+}
+
+function StatItem({
+  icon,
+  value,
+  title,
+  subtitle,
+}: {
+  icon: ReactNode;
+  value: string;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex items-center gap-5">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#F1EAF8] text-[#6E5B93]">
+        {icon}
+      </div>
+      <div>
+        <div className="text-2xl font-bold leading-tight text-[#17142E]">
+          {value}
+        </div>
+        <div className="mt-1 font-bold leading-snug text-[#17142E]">
+          {title}
+        </div>
+        <div className="text-sm leading-6 text-[#70677F]">{subtitle}</div>
+      </div>
+    </div>
+  );
+}
+
+function HeroPhotoPlaceholder({ label }: { label: string }) {
+  return (
+    <div className="relative min-h-[240px] overflow-hidden rounded-[28px] border border-white/70 bg-[#F4EFF8] shadow-[0_24px_70px_rgba(76,45,103,0.14)] sm:min-h-[320px] lg:min-h-[470px] lg:rounded-b-none">
+      <Image
+        src="/images/hero-yarn-bowl.png"
+        alt={label}
+        fill
+        priority
+        sizes="(min-width: 1024px) 47vw, 100vw"
+        className="scale-[1.18] object-cover object-[58%_58%] contrast-[1.04] saturate-[1.03] transition-transform"
+      />
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white/45 to-transparent" />
+    </div>
   );
 }

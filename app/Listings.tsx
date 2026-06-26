@@ -1,7 +1,15 @@
 import { supabase } from "./supabase";
-import { ArrowRight, MapPin } from "lucide-react";
+import {
+  Heart,
+  Hash,
+  ImageIcon,
+  MapPin,
+  Package,
+  Scale,
+} from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
+import type { ReactNode } from "react";
 
 type Props = {
   language: "en" | "pl";
@@ -26,24 +34,30 @@ export default async function Listings({ language }: Props) {
   const t =
     language === "pl"
       ? {
-          view: "Zobacz",
           empty: "Nie ma jeszcze ogłoszeń.",
+          emptyHint: "Pierwsze ogłoszenia pojawią się tutaj po dodaniu włóczki.",
           errorTitle: "Nie udało się pobrać ogłoszeń",
-          color: "Kolor",
-          dyelot: "Dye lot",
-          skeins: "motków",
-          date: "Dodano",
-          noPhoto: "Brak zdjęcia",
+          noPhoto: "Zdjęcie niedostępne",
+          newBadge: "NOWE",
+          dealBadge: "OKAZJA",
+          skeinOne: "motek",
+          skeinFew: "motki",
+          skeinMany: "motków",
+          weight: "150 m / 50 g",
+          lot: "Partia",
         }
       : {
-          view: "View",
           empty: "No listings yet.",
+          emptyHint: "The first listings will appear here after yarn is added.",
           errorTitle: "Could not load listings",
-          color: "Color",
-          dyelot: "Dye lot",
-          skeins: "skeins",
-          date: "Added",
-          noPhoto: "No photo",
+          noPhoto: "Photo unavailable",
+          newBadge: "NEW",
+          dealBadge: "DEAL",
+          skeinOne: "skein",
+          skeinFew: "skeins",
+          skeinMany: "skeins",
+          weight: "150 m / 50 g",
+          lot: "Lot",
         };
 
   await connection();
@@ -57,125 +71,136 @@ export default async function Listings({ language }: Props) {
 
   if (error) {
     return (
-      <div className="mt-8 rounded-3xl border border-red-200 bg-red-50 p-6 text-red-600">
-        <div className="font-semibold">
-          {t.errorTitle}
-        </div>
-
-        <div className="mt-2 text-sm">
-          {error.message}
-        </div>
+      <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 shadow-sm">
+        <div className="font-semibold">{t.errorTitle}</div>
+        <div className="mt-2 text-sm">{error.message}</div>
       </div>
     );
   }
 
   if (!listings || listings.length === 0) {
     return (
-      <div className="mt-10 rounded-3xl border border-[#ECE7DF] bg-white p-8 text-center text-[#6F6F6F]">
-        {t.empty}
+      <div className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-8 text-center shadow-[0_14px_40px_rgba(51,36,82,0.08)]">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F4EEF9] text-[#7A3FC5]">
+          <ImageIcon size={24} />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-[#17142E]">
+          {t.empty}
+        </h3>
+        <p className="mt-2 text-sm text-[#70677F]">{t.emptyHint}</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-      {listings.map((listing) => {
+    <div className="mt-5 grid gap-5 sm:mt-6 md:grid-cols-2 xl:grid-cols-4">
+      {listings.map((listing, index) => {
         const imageUrl = getListingImageUrl(listing);
-        const addedAt = formatDate(listing.created_at, language);
+        const badge = index === 2 ? t.dealBadge : t.newBadge;
 
         return (
-          <article
+          <Link
             key={listing.id}
-            className="overflow-hidden rounded-[32px] border border-[#ECE7DF] bg-white transition duration-200 hover:-translate-y-1 hover:shadow-md"
+            href={`/listing/${listing.id}`}
+            className="group block min-w-0 rounded-2xl outline-none transition focus-visible:ring-2 focus-visible:ring-[#7438B7] focus-visible:ring-offset-2"
           >
-            <div className="aspect-[4/3] bg-[#EEF1EA]">
-              {imageUrl ? (
-                <div
-                  className="h-full w-full bg-cover bg-center"
-                  role="img"
-                  aria-label={`${listing.brand ?? ""} ${listing.yarn_name ?? ""}`.trim()}
-                  style={{ backgroundImage: `url(${imageUrl})` }}
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-[#EEF1EA] px-6 text-center text-sm font-medium text-[#90A885]">
-                  {t.noPhoto}
-                </div>
-              )}
-            </div>
+            <article className="h-full overflow-hidden rounded-2xl border border-[#E5DDEC] bg-white shadow-[0_12px_34px_rgba(51,36,82,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_18px_48px_rgba(51,36,82,0.13)]">
+              <div className="relative h-36 overflow-hidden bg-[#F5F1FA] sm:h-40">
+                {imageUrl ? (
+                  <div
+                    className="h-full w-full bg-cover bg-center transition duration-300 group-hover:scale-[1.03]"
+                    role="img"
+                    aria-label={`${listing.brand ?? ""} ${listing.yarn_name ?? ""}`.trim()}
+                    style={{ backgroundImage: `url(${imageUrl})` }}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,#FAF7FE_0%,#F1E8F8_48%,#EFE8E0_100%)] px-6 text-center">
+                    <div>
+                      <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-[#7A3FC5] shadow-[0_10px_24px_rgba(76,45,103,0.10)]">
+                        <ImageIcon size={18} />
+                      </span>
+                      <div className="mt-2 text-xs font-semibold text-[#756889]">
+                        {t.noPhoto}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-            <div className="p-7">
-              <div className="text-sm text-[#8E8E8E]">
-                {listing.brand ?? "-"}
+                <span
+                  className={`absolute left-3 top-3 rounded-md px-3 py-1 text-xs font-bold text-white ${
+                    index === 2 ? "bg-[#4CA86D]" : "bg-[#8C5CCD]"
+                  }`}
+                >
+                  {badge}
+                </span>
+                <span className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#6C5A86] shadow-sm">
+                  <Heart size={19} />
+                </span>
               </div>
 
-              <h3 className="mt-1 text-2xl font-semibold text-[#1F2A24]">
-                {listing.yarn_name ?? "-"}
-              </h3>
+              <div className="p-4">
+                <h3 className="truncate text-lg font-bold leading-tight text-[#17142E]">
+                  {listing.brand ?? "-"}
+                </h3>
+                <p className="mt-1 truncate text-[15px] font-semibold text-[#332B4D]">
+                  {listing.yarn_name ?? "-"}
+                </p>
+                <p className="mt-1 truncate text-[15px] text-[#332B4D]">
+                  {listing.color ?? "-"}
+                </p>
 
-              <div className="mt-6 grid gap-3 text-sm text-[#6F6F6F]">
-                <ListingDetail label={t.color} value={listing.color} />
-                <ListingDetail label={t.dyelot} value={listing.dyelot} />
-                <ListingDetail
-                  label={t.date}
-                  value={addedAt}
-                />
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <div className="rounded-full bg-[#F5F8F1] px-4 py-2 text-sm font-medium text-[#90A885]">
-                  {listing.skeins ?? "-"} {t.skeins}
+                <div className="mt-4 grid grid-cols-3 gap-2 text-xs font-medium text-[#6E6582]">
+                  <MetaItem
+                    icon={<Package size={14} />}
+                    value={formatSkeins(listing.skeins, t)}
+                  />
+                  <MetaItem icon={<Scale size={14} />} value={t.weight} />
+                  <MetaItem
+                    icon={<Hash size={14} />}
+                    value={`${t.lot} ${listing.dyelot ?? "-"}`}
+                  />
                 </div>
 
                 {listing.country ? (
-                  <div className="flex items-center gap-2 rounded-full bg-[#F6F5F1] px-4 py-2 text-sm font-medium text-[#6F6F6F]">
-                    <MapPin size={15} />
-                    <span>{listing.country}</span>
+                  <div className="mt-5 flex min-w-0 items-center gap-2 text-sm font-medium text-[#6E6582]">
+                    <MapPin size={16} className="shrink-0 text-[#7A3FC5]" />
+                    <span className="truncate">{listing.country}</span>
                   </div>
                 ) : null}
               </div>
-
-              <div className="mt-8 flex justify-end">
-                <Link
-                  href={`/listing/${listing.id}`}
-                  className="flex items-center gap-2 text-sm font-medium text-[#90A885] transition hover:text-[#7E9575]"
-                >
-                  {t.view}
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-            </div>
-          </article>
+            </article>
+          </Link>
         );
       })}
     </div>
   );
 }
 
-function ListingDetail({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null;
-}) {
+function MetaItem({ icon, value }: { icon: ReactNode; value: string | null }) {
   return (
-    <p>
-      <span className="font-medium text-[#1F2A24]">{label}</span>{" "}
-      {value || "-"}
-    </p>
+    <div className="flex min-w-0 items-center gap-1.5">
+      <span className="shrink-0 text-[#7A3FC5]">{icon}</span>
+      <span className="min-w-0 truncate">{value ?? "-"}</span>
+    </div>
   );
 }
 
-function formatDate(createdAt: string | null, language: Props["language"]) {
-  if (!createdAt) {
-    return "-";
+function formatSkeins(
+  value: number | null,
+  labels: { skeinOne: string; skeinFew: string; skeinMany: string },
+) {
+  if (value === null) {
+    return null;
   }
 
-  return new Intl.DateTimeFormat(language === "pl" ? "pl-PL" : "en", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(createdAt));
+  const suffix =
+    value === 1
+      ? labels.skeinOne
+      : value >= 2 && value <= 4
+        ? labels.skeinFew
+        : labels.skeinMany;
+
+  return `${value} ${suffix}`;
 }
 
 function getListingImageUrl(listing: Listing) {
@@ -221,21 +246,21 @@ function getFirstStringFromUnknown(value: unknown): string | null {
 
 export function ListingsLoading() {
   return (
-    <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-      {[0, 1, 2].map((item) => (
+    <div className="mt-5 grid gap-5 sm:mt-6 md:grid-cols-2 xl:grid-cols-4">
+      {[0, 1, 2, 3].map((item) => (
         <div
           key={item}
-          className="overflow-hidden rounded-[32px] border border-[#ECE7DF] bg-white"
+          className="overflow-hidden rounded-2xl border border-[#E5DDEC] bg-white shadow-[0_12px_34px_rgba(51,36,82,0.08)]"
         >
-          <div className="aspect-[4/3] animate-pulse bg-[#EEF1EA]" />
-
-          <div className="space-y-4 p-7">
-            <div className="h-4 w-24 animate-pulse rounded-full bg-[#ECE7DF]" />
-            <div className="h-7 w-3/4 animate-pulse rounded-full bg-[#ECE7DF]" />
-            <div className="space-y-3 pt-3">
-              <div className="h-4 w-full animate-pulse rounded-full bg-[#ECE7DF]" />
-              <div className="h-4 w-5/6 animate-pulse rounded-full bg-[#ECE7DF]" />
-              <div className="h-4 w-2/3 animate-pulse rounded-full bg-[#ECE7DF]" />
+          <div className="h-36 animate-pulse bg-[#F5F1FA] sm:h-40" />
+          <div className="space-y-3 p-4">
+            <div className="h-5 w-28 animate-pulse rounded-full bg-[#ECE7DF]" />
+            <div className="h-4 w-3/4 animate-pulse rounded-full bg-[#ECE7DF]" />
+            <div className="h-4 w-1/2 animate-pulse rounded-full bg-[#ECE7DF]" />
+            <div className="grid grid-cols-3 gap-2 pt-2">
+              <div className="h-4 animate-pulse rounded-full bg-[#ECE7DF]" />
+              <div className="h-4 animate-pulse rounded-full bg-[#ECE7DF]" />
+              <div className="h-4 animate-pulse rounded-full bg-[#ECE7DF]" />
             </div>
           </div>
         </div>

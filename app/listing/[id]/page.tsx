@@ -1,4 +1,17 @@
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  ExternalLink,
+  Hash,
+  ImageIcon,
+  MapPin,
+  Package,
+  Palette,
+  Tag,
+} from "lucide-react";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { supabase } from "../../supabase";
 
 type Listing = {
@@ -12,6 +25,7 @@ type Listing = {
   country: string | null;
   contact: string | null;
   type: string | null;
+  status: string | null;
   description: string | null;
   image_url?: string | null;
   photo_url?: string | null;
@@ -39,84 +53,125 @@ export default async function ListingDetailsPage({ params }: Props) {
     notFound();
   }
 
-  const marketplace =
-    listing.type === "olx"
-      ? "OLX"
-      : listing.type === "vinted"
-        ? "Vinted"
-        : listing.type;
-
   const imageUrl = getListingImageUrl(listing);
   const addedAt = formatDate(listing.created_at);
-
-  const details = [
-    { label: "Producent", value: listing.brand },
-    { label: "Nazwa / kolekcja", value: listing.yarn_name },
-    { label: "Kolor", value: listing.color },
-    { label: "Dye lot", value: listing.dyelot },
-    { label: "Ilość motków", value: listing.skeins },
-    { label: "Lokalizacja", value: listing.country },
-    { label: "Dodano", value: addedAt },
-    { label: "Platforma", value: marketplace },
-  ];
+  const marketplace = getMarketplaceName(listing.type);
 
   return (
-    <main className="min-h-screen bg-[#F6F5F1] text-[#1F2A24]">
-      <section className="mx-auto max-w-3xl px-6 py-20">
+    <main className="min-h-screen bg-[#F8F6FB] text-[#1F1830]">
+      <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:py-12">
         <a
           href="/"
-          className="mb-10 inline-flex text-sm font-medium text-[#6F6F6F] transition hover:text-[#90A885]"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[#6C5A86] transition hover:text-[#6F36B9]"
         >
-          Wróć
+          <ArrowLeft size={17} />
+          Wróć do ogłoszeń
         </a>
 
-        <div className="overflow-hidden rounded-[32px] border border-[#ECE7DF] bg-white">
-          <div className="aspect-[4/3] bg-[#EEF1EA]">
-            {imageUrl ? (
-              <div
-                className="h-full w-full bg-cover bg-center"
-                role="img"
-                aria-label={`${listing.brand ?? ""} ${listing.yarn_name ?? ""}`.trim()}
-                style={{ backgroundImage: `url(${imageUrl})` }}
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm font-medium text-[#90A885]">
-                Brak zdjęcia
-              </div>
-            )}
-          </div>
-
-          <div className="p-8">
-            <div className="text-sm text-[#8E8E8E]">
-              {listing.brand ?? "-"}
-            </div>
-
-            <h1 className="mt-1 text-4xl font-semibold text-[#1F2A24]">
-              {listing.yarn_name ?? "-"}
-            </h1>
-
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              {details.map((detail) => (
+        <div className="mt-7 grid overflow-hidden rounded-2xl border border-[#E8E1F0] bg-white shadow-[0_18px_55px_rgba(51,36,82,0.10)] lg:grid-cols-[0.42fr_0.58fr]">
+          <section className="order-2 border-[#E8E1F0] p-5 sm:p-6 lg:order-1 lg:border-r">
+            <div className="h-[240px] overflow-hidden rounded-2xl border border-[#E8E1F0] bg-[#F5F1FA] sm:h-[280px] lg:h-[440px]">
+              {imageUrl ? (
                 <div
-                  key={detail.label}
-                  className="rounded-2xl border border-[#ECE7DF] bg-[#F6F5F1] px-5 py-4"
-                >
-                  <div className="text-sm text-[#8E8E8E]">
-                    {detail.label}
-                  </div>
-                  <div className="mt-1 font-medium text-[#1F2A24]">
-                    {detail.value ?? "-"}
+                  className="h-full w-full bg-cover bg-center"
+                  role="img"
+                  aria-label={`${listing.brand ?? ""} ${listing.yarn_name ?? ""}`.trim()}
+                  style={{ backgroundImage: `url(${imageUrl})` }}
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-4 bg-[linear-gradient(135deg,#FBF8FF_0%,#F1E9FA_52%,#E8F0E2_100%)] px-6 text-center">
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#7A3FC5] shadow-sm">
+                    <ImageIcon size={28} />
+                  </span>
+                  <div>
+                    <div className="font-semibold text-[#4A3B62]">
+                      Brak zdjęcia
+                    </div>
+                    <p className="mt-1 max-w-xs text-sm text-[#7B718A]">
+                      Szczegóły włóczki znajdziesz w opisie i pod linkiem do ogłoszenia.
+                    </p>
                   </div>
                 </div>
-              ))}
+              )}
+            </div>
+          </section>
+
+          <section className="order-1 p-5 sm:p-7 lg:order-2 lg:p-9">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-[#7B718A]">
+                <CalendarDays size={16} />
+                Dodane {addedAt}
+              </div>
+
+              {listing.status ? (
+                <span className="inline-flex items-center gap-2 rounded-full bg-[#DDF7E9] px-3 py-1.5 text-sm font-semibold text-[#287A4D]">
+                  <CheckCircle2 size={16} />
+                  Aktywne
+                </span>
+              ) : null}
             </div>
 
-            <div className="mt-6 rounded-2xl border border-[#ECE7DF] bg-[#F6F5F1] px-5 py-4">
-              <div className="text-sm text-[#8E8E8E]">
+            <div className="mt-6">
+              <p className="text-sm font-semibold uppercase tracking-wide text-[#7A3FC5]">
+                {listing.brand ?? "Producent"}
+              </p>
+              <h1 className="mt-2 text-3xl font-semibold leading-tight text-[#1F1830] sm:text-4xl">
+                {listing.yarn_name ?? "-"}
+              </h1>
+
+              {listing.country ? (
+                <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#6C5A86]">
+                  <MapPin size={17} />
+                  {listing.country}
+                </div>
+              ) : null}
+
+              <div className="mt-5 grid grid-cols-3 gap-2 lg:hidden">
+                <QuickFact label="Kolor" value={listing.color} />
+                <QuickFact label="Dye lot" value={listing.dyelot} />
+                <QuickFact label="Motki" value={listing.skeins} />
+              </div>
+            </div>
+
+            <div className="mt-7 hidden gap-3 sm:grid-cols-2 lg:grid">
+              <DetailItem
+                icon={<Tag size={20} />}
+                label="Producent"
+                value={listing.brand}
+              />
+              <DetailItem
+                icon={<Palette size={20} />}
+                label="Kolor"
+                value={listing.color}
+              />
+              <DetailItem
+                icon={<Hash size={20} />}
+                label="Dye lot"
+                value={listing.dyelot}
+              />
+              <DetailItem
+                icon={<Package size={20} />}
+                label="Ilość motków"
+                value={listing.skeins}
+              />
+              <DetailItem
+                icon={<MapPin size={20} />}
+                label="Lokalizacja"
+                value={listing.country}
+              />
+              <DetailItem
+                icon={<CheckCircle2 size={20} />}
+                label="Status"
+                value={listing.status === "active" ? "Aktywne" : listing.status}
+              />
+            </div>
+
+            <div className="mt-5 hidden rounded-2xl border border-[#E8E1F0] bg-[#FCFAFF] p-5 lg:block">
+              <div className="text-sm font-semibold text-[#7A3FC5]">
                 Opis
               </div>
-              <p className="mt-1 whitespace-pre-line text-[#1F2A24]">
-                {listing.description || "-"}
+              <p className="mt-2 whitespace-pre-line text-[#3C334D]">
+                {listing.description || "Brak opisu."}
               </p>
             </div>
 
@@ -125,19 +180,131 @@ export default async function ListingDetailsPage({ params }: Props) {
                 href={listing.contact}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-8 inline-flex rounded-2xl bg-[#90A885] px-7 py-4 font-medium text-white transition hover:bg-[#7E9575]"
+                className="mt-6 hidden w-full items-center justify-center gap-2 rounded-2xl bg-[#7438B7] px-7 py-4 text-base font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.25)] transition hover:bg-[#622CA2] sm:text-lg lg:inline-flex"
               >
+                <ExternalLink size={20} />
                 Przejdź do ogłoszenia
               </a>
             ) : (
-              <div className="mt-8 rounded-2xl border border-[#ECE7DF] bg-[#F6F5F1] px-5 py-4 text-[#6F6F6F]">
+              <div className="mt-6 hidden rounded-2xl border border-[#E8E1F0] bg-[#FCFAFF] px-5 py-4 text-[#6C5A86] lg:block">
                 Brak linku do ogłoszenia.
               </div>
             )}
-          </div>
+
+            {marketplace ? (
+              <p className="mt-3 hidden text-center text-sm font-medium text-[#7B718A] lg:block">
+                Ogłoszenie zewnętrzne: {marketplace}
+              </p>
+            ) : null}
+          </section>
+
+          <section className="order-3 border-t border-[#E8E1F0] p-5 lg:hidden">
+            <div className="grid gap-3">
+              <DetailItem
+                icon={<Tag size={20} />}
+                label="Producent"
+                value={listing.brand}
+              />
+              <DetailItem
+                icon={<Palette size={20} />}
+                label="Kolor"
+                value={listing.color}
+              />
+              <DetailItem
+                icon={<Hash size={20} />}
+                label="Dye lot"
+                value={listing.dyelot}
+              />
+              <DetailItem
+                icon={<Package size={20} />}
+                label="Ilość motków"
+                value={listing.skeins}
+              />
+              <DetailItem
+                icon={<MapPin size={20} />}
+                label="Lokalizacja"
+                value={listing.country}
+              />
+              <DetailItem
+                icon={<CheckCircle2 size={20} />}
+                label="Status"
+                value={listing.status === "active" ? "Aktywne" : listing.status}
+              />
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-[#E8E1F0] bg-[#FCFAFF] p-5">
+              <div className="text-sm font-semibold text-[#7A3FC5]">
+                Opis
+              </div>
+              <p className="mt-2 whitespace-pre-line text-[#3C334D]">
+                {listing.description || "Brak opisu."}
+              </p>
+            </div>
+
+            {listing.contact ? (
+              <a
+                href={listing.contact}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#7438B7] px-7 py-4 text-base font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.25)] transition hover:bg-[#622CA2]"
+              >
+                <ExternalLink size={20} />
+                Przejdź do ogłoszenia
+              </a>
+            ) : (
+              <div className="mt-6 rounded-2xl border border-[#E8E1F0] bg-[#FCFAFF] px-5 py-4 text-[#6C5A86]">
+                Brak linku do ogłoszenia.
+              </div>
+            )}
+
+            {marketplace ? (
+              <p className="mt-3 text-center text-sm font-medium text-[#7B718A]">
+                Ogłoszenie zewnętrzne: {marketplace}
+              </p>
+            ) : null}
+          </section>
         </div>
       </section>
     </main>
+  );
+}
+
+function QuickFact({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number | null;
+}) {
+  return (
+    <div className="rounded-2xl bg-[#F4EEF9] px-3 py-3">
+      <div className="text-xs font-semibold text-[#7A3FC5]">{label}</div>
+      <div className="mt-1 truncate text-sm font-semibold text-[#1F1830]">
+        {value ?? "-"}
+      </div>
+    </div>
+  );
+}
+
+function DetailItem({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string | number | null;
+}) {
+  return (
+    <div className="flex gap-3 rounded-2xl border border-[#E8E1F0] bg-white px-4 py-4 shadow-[0_8px_22px_rgba(51,36,82,0.05)]">
+      <div className="mt-0.5 text-[#7A3FC5]">{icon}</div>
+      <div>
+        <div className="text-sm font-semibold text-[#7A3FC5]">{label}</div>
+        <div className="mt-1 font-semibold text-[#1F1830]">
+          {value ?? "-"}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -151,6 +318,18 @@ function formatDate(createdAt: string | null) {
     month: "short",
     year: "numeric",
   }).format(new Date(createdAt));
+}
+
+function getMarketplaceName(type: string | null) {
+  if (type === "olx") {
+    return "OLX";
+  }
+
+  if (type === "vinted") {
+    return "Vinted";
+  }
+
+  return type;
 }
 
 function getListingImageUrl(listing: Listing) {
