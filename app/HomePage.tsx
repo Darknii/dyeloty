@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import Header from "./Header";
 import Hero from "./Hero";
 import HowItWorks from "./HowItWorks";
 import Stats from "./Stats";
-import Listings from "./Listings";
+import Listings, { ListingsLoading } from "./Listings";
 import SupportDyeloty from "./SupportDyeloty";
 import Footer from "./Footer";
 
@@ -37,7 +38,9 @@ export default function HomePage({ language }: Props) {
             {t.recent}
           </h2>
 
-          <Listings />
+          <Suspense fallback={<ListingsLoading />}>
+            <Listings language={language} />
+          </Suspense>
         </section>
 
         <SupportDyeloty language={language} />
