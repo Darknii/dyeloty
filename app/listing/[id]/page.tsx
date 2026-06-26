@@ -37,10 +37,15 @@ type Props = {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{
+    from?: string | string[];
+  }>;
 };
 
-export default async function ListingDetailsPage({ params }: Props) {
+export default async function ListingDetailsPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { from } = await searchParams;
+  const backHref = from === "account" ? "/account" : "/";
 
   const { data: listing, error } = await supabase
     .from("listings")
@@ -61,7 +66,7 @@ export default async function ListingDetailsPage({ params }: Props) {
     <main className="min-h-screen bg-[#F8F6FB] text-[#1F1830]">
       <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:py-12">
         <a
-          href="/"
+          href={backHref}
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#6C5A86] transition hover:text-[#6F36B9]"
         >
           <ArrowLeft size={17} />

@@ -108,10 +108,13 @@ export default function Header({ language }: Props) {
           </a>
 
           {session?.user ? (
-            <span className="hidden min-h-11 max-w-40 items-center gap-2 truncate rounded-full px-2 text-sm font-semibold text-[#17142E] lg:inline-flex">
+            <a
+              href="/account"
+              className="hidden min-h-11 max-w-40 items-center gap-2 truncate rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"
+            >
               <UserRound size={20} />
               <span className="truncate">{accountLabel}</span>
-            </span>
+            </a>
           ) : (
             <button
               onClick={handleLogin}
@@ -176,10 +179,14 @@ export default function Header({ language }: Props) {
               {t.favorites}
             </a>
             {session?.user ? (
-              <span className="flex items-center gap-2 rounded-xl px-3 py-3 text-[#17142E]">
+              <a
+                href="/account"
+                onClick={() => setIsMenuOpen(false)}
+                className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
+              >
                 <UserRound size={19} />
-                <span className="truncate">{accountLabel}</span>
-              </span>
+                <span className="truncate">{t.account}</span>
+              </a>
             ) : (
               <button
                 type="button"
