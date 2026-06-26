@@ -13,21 +13,28 @@ export default function AuthCallbackPage() {
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
 
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-          if (error) {
-            console.error("Auth callback code exchange failed:", error);
-          }
+        if (!code) {
+          throw new Error("Auth callback is missing the OAuth code parameter.");
         }
 
-        await supabase.auth.getSession();
-      } catch (error) {
-        console.error("Auth callback failed:", error);
-      } finally {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (error) {
+          console.error("Auth callback code exchange failed:", error);
+          throw error;
+        }
+
+        const session = await waitForPersistedSession();
+
+        if (!session) {
+          throw new Error("Auth callback finished without a persisted session.");
+        }
+
         if (isMounted) {
           window.location.replace("/account");
         }
+      } catch (error) {
+        console.error("Auth callback failed:", error);
       }
     }
 
@@ -46,4 +53,26 @@ export default function AuthCallbackPage() {
       </div>
     </main>
   );
+}
+
+async function waitForPersistedSession() {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error("Auth callback session read failed:", error);
+      throw error;
+    }
+
+    if (session) {
+      return session;
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+  }
+
+  return null;
 }
