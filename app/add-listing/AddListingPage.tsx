@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { supabase } from "../supabase";
+import Link from "next/link";
+import { ArrowLeft, Loader2, Plus, UserRound } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
+import { supabase } from "../supabase";
+import { getAuthCallbackRedirectTo } from "../authRedirect";
 
 type Props = {
   language: "en" | "pl";
@@ -40,6 +43,9 @@ export default function AddListingPage({ language }: Props) {
   async function handleLogin() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
+      options: {
+        redirectTo: getAuthCallbackRedirectTo(),
+      },
     });
   }
 
@@ -123,16 +129,20 @@ export default function AddListingPage({ language }: Props) {
   const t =
     language === "pl"
       ? {
-          title: "Dodaj włóczkę",
-          subtitle: "Dodaj włóczkę, która może pomóc komuś dokończyć projekt.",
-          loginTitle: "❤️ Aby dodać włóczkę, zaloguj się przez Google.",
+          back: "Wróć do strony głównej",
+          title: "Dodaj ogłoszenie",
+          subtitle:
+            "Wpisz dane włóczki, której szukasz lub którą chcesz oddać albo sprzedać.",
+          loginTitle: "Aby dodać ogłoszenie, zaloguj się przez Google.",
+          loginHint:
+            "Po zalogowaniu wróć do formularza i uzupełnij szczegóły włóczki.",
           loginButton: "Zaloguj przez Google",
           brand: "Marka",
           yarn: "Nazwa włóczki",
           color: "Kolor",
-          dyelot: "Dyelot",
+          dyelot: "Dye lot",
           skeins: "Liczba motków",
-          country: "Kraj",
+          country: "Kraj / lokalizacja",
           listingUrl: "Link do ogłoszenia",
           listingUrlPlaceholder:
             "https://www.vinted.pl/... albo https://www.olx.pl/...",
@@ -148,16 +158,20 @@ export default function AddListingPage({ language }: Props) {
           genericError: "Nie udało się dodać ogłoszenia. Spróbuj ponownie.",
         }
       : {
-          title: "Add Yarn",
-          subtitle: "Add yarn that might help someone finish a project.",
-          loginTitle: "❤️ Sign in with Google to add yarn.",
+          back: "Back to homepage",
+          title: "Add listing",
+          subtitle:
+            "Enter the yarn details you are looking for or want to pass on or sell.",
+          loginTitle: "Sign in with Google to add a listing.",
+          loginHint:
+            "After signing in, return to the form and add your yarn details.",
           loginButton: "Continue with Google",
           brand: "Brand",
           yarn: "Yarn name",
           color: "Color",
-          dyelot: "Dyelot",
+          dyelot: "Dye lot",
           skeins: "Number of skeins",
-          country: "Country",
+          country: "Country / location",
           listingUrl: "Listing link",
           listingUrlPlaceholder:
             "https://www.vinted.pl/... or https://www.olx.pl/...",
@@ -173,144 +187,128 @@ export default function AddListingPage({ language }: Props) {
           genericError: "Could not add the listing. Please try again.",
         };
 
-  if (!session) {
-    return (
-      <main className="min-h-screen bg-[#FAF8F5] text-[#2D2D2D]">
-        <section className="mx-auto max-w-2xl px-6 py-20 text-center">
-          <h1 className="text-4xl font-bold">{t.loginTitle}</h1>
-
-          <button
-            onClick={handleLogin}
-            className="mt-10 rounded-2xl bg-[#90A885] px-8 py-4 text-white"
-          >
-            {t.loginButton}
-          </button>
-        </section>
-      </main>
-    );
-  }
+  const homeHref = language === "pl" ? "/pl" : "/en";
 
   return (
-    <main className="min-h-screen bg-[#FAF8F5] text-[#2D2D2D]">
-      <section className="mx-auto max-w-2xl px-6 py-20">
-        <h1 className="text-5xl font-bold">{t.title}</h1>
+    <main className="min-h-screen bg-[#F7F4FB] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
+      <section className="mx-auto max-w-3xl">
+        <Link
+          href={homeHref}
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#6C5A86] shadow-[0_10px_28px_rgba(51,36,82,0.07)] transition hover:text-[#7438B7]"
+        >
+          <ArrowLeft size={17} />
+          {t.back}
+        </Link>
 
-        <p className="mt-4 text-gray-500">{t.subtitle}</p>
+        <div className="mt-5 rounded-2xl border border-[#E8E1F0] bg-white p-6 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-8">
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#7438B7]">
+            Dyeloty
+          </p>
+          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{t.title}</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6E6582] sm:text-base">
+            {t.subtitle}
+          </p>
 
-        <form onSubmit={handleSubmit} className="mt-12 space-y-6">
-          <div>
-            <label htmlFor="brand" className="mb-2 block font-medium">
-              {t.brand}
-            </label>
-            <input
-              id="brand"
-              value={brand}
-              onChange={(event) => setBrand(event.target.value)}
-              className="w-full rounded-2xl border p-4"
-              required
-            />
-          </div>
+          {!session ? (
+            <div className="mt-8 rounded-2xl bg-[#FAF8FC] p-6 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#7438B7] shadow-sm">
+                <UserRound size={25} />
+              </div>
+              <h2 className="mt-4 text-xl font-bold">{t.loginTitle}</h2>
+              <p className="mt-2 text-sm text-[#6E6582]">{t.loginHint}</p>
+              <button
+                onClick={handleLogin}
+                className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#7438B7] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.28)] transition hover:bg-[#622CA2]"
+              >
+                {t.loginButton}
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-8 grid gap-5">
+              <FormField id="brand" label={t.brand} value={brand} onChange={setBrand} />
+              <FormField id="yarnName" label={t.yarn} value={yarnName} onChange={setYarnName} />
+              <FormField id="color" label={t.color} value={color} onChange={setColor} />
+              <FormField id="dyelot" label={t.dyelot} value={dyelot} onChange={setDyelot} />
 
-          <div>
-            <label htmlFor="yarnName" className="mb-2 block font-medium">
-              {t.yarn}
-            </label>
-            <input
-              id="yarnName"
-              value={yarnName}
-              onChange={(event) => setYarnName(event.target.value)}
-              className="w-full rounded-2xl border p-4"
-              required
-            />
-          </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField
+                  id="skeins"
+                  label={t.skeins}
+                  value={skeins}
+                  onChange={setSkeins}
+                  type="number"
+                  min="1"
+                />
+                <FormField id="country" label={t.country} value={country} onChange={setCountry} />
+              </div>
 
-          <div>
-            <label htmlFor="color" className="mb-2 block font-medium">
-              {t.color}
-            </label>
-            <input
-              id="color"
-              value={color}
-              onChange={(event) => setColor(event.target.value)}
-              className="w-full rounded-2xl border p-4"
-              required
-            />
-          </div>
+              <div>
+                <label htmlFor="listingUrl" className="mb-2 block text-sm font-semibold text-[#514A67]">
+                  {t.listingUrl}
+                </label>
+                <input
+                  id="listingUrl"
+                  type="url"
+                  value={listingUrl}
+                  onChange={(event) => setListingUrl(event.target.value)}
+                  placeholder={t.listingUrlPlaceholder}
+                  className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition placeholder:text-[#9489AA] focus:border-[#A875D2]"
+                  required
+                />
+                <p className="mt-2 text-sm text-[#6E6582]">{t.listingUrlHelp}</p>
+              </div>
 
-          <div>
-            <label htmlFor="dyelot" className="mb-2 block font-medium">
-              {t.dyelot}
-            </label>
-            <input
-              id="dyelot"
-              value={dyelot}
-              onChange={(event) => setDyelot(event.target.value)}
-              className="w-full rounded-2xl border p-4"
-              required
-            />
-          </div>
+              {message ? (
+                <p className="rounded-2xl bg-[#FAF8FC] p-4 text-sm text-[#514A67]">
+                  {message}
+                </p>
+              ) : null}
 
-          <div>
-            <label htmlFor="skeins" className="mb-2 block font-medium">
-              {t.skeins}
-            </label>
-            <input
-              id="skeins"
-              type="number"
-              min="1"
-              value={skeins}
-              onChange={(event) => setSkeins(event.target.value)}
-              className="w-full rounded-2xl border p-4"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="country" className="mb-2 block font-medium">
-              {t.country}
-            </label>
-            <input
-              id="country"
-              value={country}
-              onChange={(event) => setCountry(event.target.value)}
-              className="w-full rounded-2xl border p-4"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="listingUrl" className="mb-2 block font-medium">
-              {t.listingUrl}
-            </label>
-            <input
-              id="listingUrl"
-              type="url"
-              value={listingUrl}
-              onChange={(event) => setListingUrl(event.target.value)}
-              placeholder={t.listingUrlPlaceholder}
-              className="w-full rounded-2xl border p-4"
-              required
-            />
-            <p className="mt-2 text-sm text-gray-500">
-              {t.listingUrlHelp}
-            </p>
-          </div>
-
-          {message ? (
-            <p className="rounded-2xl bg-white p-4 text-sm text-gray-600">
-              {message}
-            </p>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-2xl bg-[#90A885] px-8 py-4 text-white disabled:opacity-60"
-          >
-            {isSubmitting ? t.publishing : t.publish}
-          </button>
-        </form>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#7438B7] px-8 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.28)] transition hover:bg-[#622CA2] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                {isSubmitting ? t.publishing : t.publish}
+              </button>
+            </form>
+          )}
+        </div>
       </section>
     </main>
+  );
+}
+
+function FormField({
+  id,
+  label,
+  value,
+  onChange,
+  type = "text",
+  min,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  min?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-[#514A67]">
+        {label}
+      </label>
+      <input
+        id={id}
+        type={type}
+        min={min}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition placeholder:text-[#9489AA] focus:border-[#A875D2]"
+        required
+      />
+    </div>
   );
 }

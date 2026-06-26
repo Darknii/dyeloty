@@ -1,11 +1,15 @@
 "use client";
 
 import { supabase } from "./supabase";
+import { getAuthCallbackRedirectTo } from "./authRedirect";
 
 export default function LoginButton() {
   async function handleLogin() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
+      options: {
+        redirectTo: getAuthCallbackRedirectTo(),
+      },
     });
   }
 

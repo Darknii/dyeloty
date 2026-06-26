@@ -4,7 +4,7 @@ type Props = {
 
 export default function Footer({ language }: Props) {
   return (
-    <footer className="mt-24 border-t border-[#E8E1F0] bg-white py-16">
+    <footer id="support" className="mt-24 border-t border-[#E8E1F0] bg-white py-16">
       <div className="mx-auto max-w-7xl text-center">
         <div className="text-2xl font-semibold text-[#17142E]">Dyeloty</div>
 
@@ -50,7 +50,7 @@ export default function Footer({ language }: Props) {
             {language === "pl" ? "Polityka prywatności" : "Privacy Policy"}
           </a>
 
-          <a href="#" className="transition hover:text-[#7438B7]">
+          <a href="#support" className="transition hover:text-[#7438B7]">
             ☕ {language === "pl" ? "Wesprzyj Dyeloty" : "Support Dyeloty"}
           </a>
         </div>

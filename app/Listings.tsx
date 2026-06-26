@@ -13,6 +13,13 @@ import type { ReactNode } from "react";
 
 type Props = {
   language: "en" | "pl";
+  filters?: {
+    q?: string;
+    brand?: string;
+    color?: string;
+    dyelot?: string;
+    location?: string;
+  };
 };
 
 type Listing = {
@@ -30,12 +37,14 @@ type Listing = {
   images?: unknown;
 };
 
-export default async function Listings({ language }: Props) {
+export default async function Listings({ language, filters = {} }: Props) {
   const t =
     language === "pl"
       ? {
           empty: "Nie ma jeszcze ogłoszeń.",
           emptyHint: "Pierwsze ogłoszenia pojawią się tutaj po dodaniu włóczki.",
+          searchEmpty: "Brak pasujących ogłoszeń.",
+          searchEmptyHint: "Spróbuj wpisać inną markę, kolor albo dye lot.",
           errorTitle: "Nie udało się pobrać ogłoszeń",
           noPhoto: "Zdjęcie niedostępne",
           newBadge: "NOWE",
@@ -49,6 +58,8 @@ export default async function Listings({ language }: Props) {
       : {
           empty: "No listings yet.",
           emptyHint: "The first listings will appear here after yarn is added.",
+          searchEmpty: "No matching listings.",
+          searchEmptyHint: "Try another brand, color, or dye lot.",
           errorTitle: "Could not load listings",
           noPhoto: "Photo unavailable",
           newBadge: "NEW",
@@ -62,12 +73,43 @@ export default async function Listings({ language }: Props) {
 
   await connection();
 
-  const { data: listings, error } = await supabase
+  let query = supabase
     .from("listings")
     .select("*")
     .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .returns<Listing[]>();
+    .order("created_at", { ascending: false });
+
+  const q = filters.q?.trim();
+  const brand = filters.brand?.trim();
+  const color = filters.color?.trim();
+  const dyelot = filters.dyelot?.trim();
+  const location = filters.location?.trim();
+  const hasSearch = Boolean(q || brand || color || dyelot || location);
+
+  if (q) {
+    const escapedQ = escapeSupabaseFilterValue(q);
+    query = query.or(
+      `brand.ilike.%${escapedQ}%,yarn_name.ilike.%${escapedQ}%,color.ilike.%${escapedQ}%,dyelot.ilike.%${escapedQ}%`,
+    );
+  }
+
+  if (brand) {
+    query = query.ilike("brand", `%${brand}%`);
+  }
+
+  if (color) {
+    query = query.ilike("color", `%${color}%`);
+  }
+
+  if (dyelot) {
+    query = query.ilike("dyelot", `%${dyelot}%`);
+  }
+
+  if (location) {
+    query = query.ilike("country", `%${location}%`);
+  }
+
+  const { data: listings, error } = await query.returns<Listing[]>();
 
   if (error) {
     return (
@@ -85,9 +127,11 @@ export default async function Listings({ language }: Props) {
           <ImageIcon size={24} />
         </div>
         <h3 className="mt-4 text-lg font-semibold text-[#17142E]">
-          {t.empty}
+          {hasSearch ? t.searchEmpty : t.empty}
         </h3>
-        <p className="mt-2 text-sm text-[#70677F]">{t.emptyHint}</p>
+        <p className="mt-2 text-sm text-[#70677F]">
+          {hasSearch ? t.searchEmptyHint : t.emptyHint}
+        </p>
       </div>
     );
   }
@@ -174,6 +218,10 @@ export default async function Listings({ language }: Props) {
       })}
     </div>
   );
+}
+
+function escapeSupabaseFilterValue(value: string) {
+  return value.replace(/[%*,()]/g, "");
 }
 
 function MetaItem({ icon, value }: { icon: ReactNode; value: string | null }) {

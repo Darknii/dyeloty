@@ -1,5 +1,12 @@
 import HomePage from "../HomePage";
+import type { ListingFilters } from "../HomePage";
 
-export default function Page() {
-  return <HomePage language="pl" />;
+type Props = {
+  searchParams: Promise<ListingFilters>;
+};
+
+export default async function Page({ searchParams }: Props) {
+  const filters = await searchParams;
+
+  return <HomePage language="pl" filters={filters} />;
 }

@@ -16,9 +16,18 @@ import Footer from "./Footer";
 
 type Props = {
   language: "en" | "pl";
+  filters?: ListingFilters;
 };
 
-export default function HomePage({ language }: Props) {
+export type ListingFilters = {
+  q?: string | string[];
+  brand?: string | string[];
+  color?: string | string[];
+  dyelot?: string | string[];
+  location?: string | string[];
+};
+
+export default function HomePage({ language, filters = {} }: Props) {
   const t =
     language === "pl"
       ? {
@@ -51,6 +60,12 @@ export default function HomePage({ language }: Props) {
           statsUsersSub: "dołączyło do nas",
           statsSafe: "Bezpieczne zakupy",
           statsSafeSub: "i kontakt ze sprzedającym",
+          howTitle: "Jak to działa?",
+          howSteps: [
+            "Wpisz markę, kolor albo dye lot.",
+            "Sprawdź ogłoszenia innych dziewiarek.",
+            "Przejdź do OLX lub Vinted i dokończ kontakt ze sprzedającą.",
+          ],
         }
       : {
           titleOne: "Find yarn.",
@@ -82,9 +97,17 @@ export default function HomePage({ language }: Props) {
           statsUsersSub: "joined us",
           statsSafe: "Safe buying",
           statsSafeSub: "with seller contact",
+          howTitle: "How it works?",
+          howSteps: [
+            "Enter a brand, color, or dye lot.",
+            "Check listings from other makers.",
+            "Open OLX or Vinted and finish the conversation with the seller.",
+          ],
         };
 
   const chips = ["Drops Air", "Alize Puffy", "Merino Extra Fine", "Baby Merino", "Kokonki"];
+  const homeHref = language === "pl" ? "/pl" : "/en";
+  const normalizedFilters = normalizeFilters(filters);
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#F7F4FB] text-[#17142E]">
@@ -116,30 +139,44 @@ export default function HomePage({ language }: Props) {
 
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <section className="relative z-20 -mt-1 sm:-mt-4 lg:-mt-24">
-          <div className="rounded-2xl border border-[#E6DDEC] bg-white p-4 shadow-[0_18px_55px_rgba(51,36,82,0.11)] sm:p-6">
+          <form
+            action={homeHref}
+            className="rounded-2xl border border-[#E6DDEC] bg-white p-4 shadow-[0_18px_55px_rgba(51,36,82,0.11)] sm:p-6"
+          >
             <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr_0.95fr_auto] lg:items-end">
               <SearchField
                 label={t.brand}
                 placeholder={t.brandPlaceholder}
                 icon={<Search size={17} />}
+                name="brand"
+                defaultValue={normalizedFilters.brand}
               />
               <SearchField
                 label={t.color}
                 placeholder={t.colorPlaceholder}
                 icon={<Palette size={17} />}
+                name="color"
+                defaultValue={normalizedFilters.color}
               />
               <SearchField
                 label={t.dyelot}
                 placeholder={t.dyelotPlaceholder}
                 icon={<Hash size={17} />}
+                name="dyelot"
+                defaultValue={normalizedFilters.dyelot}
               />
               <SearchField
                 label={t.location}
                 placeholder={t.locationPlaceholder}
                 icon={<MapPin size={17} />}
+                name="location"
+                defaultValue={normalizedFilters.location}
               />
 
-              <button className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#7438B7] px-8 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.28)] transition hover:bg-[#622CA2] lg:w-[156px]">
+              <button
+                type="submit"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#7438B7] px-8 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.28)] transition hover:bg-[#622CA2] lg:w-[156px]"
+              >
                 <Search size={18} />
                 {t.search}
               </button>
@@ -148,15 +185,16 @@ export default function HomePage({ language }: Props) {
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-[#6E6582]">
               <span className="mr-2 font-medium">{t.popular}</span>
               {chips.map((chip) => (
-                <span
+                <a
                   key={chip}
+                  href={`${homeHref}?q=${encodeURIComponent(chip)}#listings`}
                   className="rounded-full bg-[#F2EFF8] px-4 py-2 font-medium text-[#342E47]"
                 >
                   {chip}
-                </span>
+                </a>
               ))}
             </div>
-          </div>
+          </form>
         </section>
 
         <section className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-5 shadow-[0_12px_38px_rgba(51,36,82,0.08)] sm:p-6">
@@ -188,6 +226,24 @@ export default function HomePage({ language }: Props) {
           </div>
         </section>
 
+        <section id="how-it-works" className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-5 shadow-[0_12px_38px_rgba(51,36,82,0.08)] sm:p-6">
+          <h2 className="text-2xl font-bold tracking-normal text-[#17142E]">
+            {t.howTitle}
+          </h2>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {t.howSteps.map((step, index) => (
+              <div key={step} className="rounded-2xl bg-[#FAF8FC] p-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F1EAF8] text-sm font-bold text-[#7438B7]">
+                  {index + 1}
+                </div>
+                <p className="mt-4 text-sm font-semibold leading-6 text-[#332B4D]">
+                  {step}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section id="listings" className="pb-14 pt-9 sm:pb-20 sm:pt-11">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-2xl font-bold tracking-normal text-[#17142E]">
@@ -203,7 +259,7 @@ export default function HomePage({ language }: Props) {
           </div>
 
           <Suspense fallback={<ListingsLoading />}>
-            <Listings language={language} />
+            <Listings language={language} filters={normalizedFilters} />
           </Suspense>
         </section>
       </div>
@@ -213,14 +269,36 @@ export default function HomePage({ language }: Props) {
   );
 }
 
+function normalizeFilters(filters: ListingFilters) {
+  return {
+    q: getFirstParam(filters.q),
+    brand: getFirstParam(filters.brand),
+    color: getFirstParam(filters.color),
+    dyelot: getFirstParam(filters.dyelot),
+    location: getFirstParam(filters.location),
+  };
+}
+
+function getFirstParam(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
+
 function SearchField({
   label,
   placeholder,
   icon,
+  name,
+  defaultValue,
 }: {
   label: string;
   placeholder: string;
   icon: ReactNode;
+  name: string;
+  defaultValue?: string;
 }) {
   return (
     <label className="block">
@@ -230,6 +308,8 @@ function SearchField({
       </span>
       <input
         type="text"
+        name={name}
+        defaultValue={defaultValue}
         placeholder={placeholder}
         className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition placeholder:text-[#9489AA] focus:border-[#A875D2]"
       />

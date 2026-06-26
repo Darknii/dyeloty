@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
+import { getAuthCallbackRedirectTo } from "../authRedirect";
 
 type Listing = {
   id: string;
@@ -35,6 +37,9 @@ export default function AccountPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState("");
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [profileMessage, setProfileMessage] = useState("");
 
   const loadListings = useCallback(async (userId: string) => {
     setIsListingsLoading(true);
@@ -60,6 +65,7 @@ export default function AccountPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setDisplayName(getSessionDisplayName(session));
       setIsAuthLoading(false);
 
       if (session?.user) {
@@ -71,6 +77,7 @@ export default function AccountPage() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      setDisplayName(getSessionDisplayName(session));
 
       if (session?.user) {
         void loadListings(session.user.id);
@@ -85,7 +92,40 @@ export default function AccountPage() {
   async function handleLogin() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
+      options: {
+        redirectTo: getAuthCallbackRedirectTo(),
+      },
     });
+  }
+
+  async function handleSaveDisplayName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setIsSavingName(true);
+    setProfileMessage("");
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        display_name: displayName.trim(),
+      },
+    });
+
+    setIsSavingName(false);
+
+    if (error) {
+      setProfileMessage(error.message || "Nie udało się zapisać nazwy.");
+      return;
+    }
+
+    setSession((currentSession) =>
+      currentSession && data.user
+        ? {
+            ...currentSession,
+            user: data.user,
+          }
+        : currentSession,
+    );
+    setProfileMessage("Nazwa została zapisana.");
   }
 
   async function handleDelete(listingId: string) {
@@ -206,10 +246,36 @@ export default function AccountPage() {
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6E6582] sm:text-base">
             Zarządzasz ogłoszeniami jako{" "}
             <span className="font-semibold text-[#332B4D]">
-              {session.user.email ?? "zalogowany użytkownik"}
+              {displayName || session.user.email || "zalogowany użytkownik"}
             </span>
             .
           </p>
+
+          <form onSubmit={handleSaveDisplayName} className="mt-6 max-w-xl">
+            <label htmlFor="displayName" className="mb-2 block text-sm font-semibold text-[#514A67]">
+              Nazwa widoczna w aplikacji
+            </label>
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <input
+                id="displayName"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="np. Kasia z Krakowa"
+                className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition placeholder:text-[#9489AA] focus:border-[#A875D2]"
+              />
+              <button
+                type="submit"
+                disabled={isSavingName}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#F4EEF9] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#EDE2F8] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingName ? <Loader2 className="animate-spin" size={17} /> : null}
+                Zapisz
+              </button>
+            </div>
+            {profileMessage ? (
+              <p className="mt-2 text-sm text-[#6E6582]">{profileMessage}</p>
+            ) : null}
+          </form>
         </div>
 
         <div className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-4 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-6">
@@ -393,6 +459,15 @@ function getStatusClassName(status: string | null) {
   }
 
   return "bg-[#F4EEF9] text-[#7438B7]";
+}
+
+function getSessionDisplayName(session: Session | null) {
+  const value =
+    session?.user?.user_metadata?.display_name ??
+    session?.user?.user_metadata?.name ??
+    "";
+
+  return typeof value === "string" ? value : "";
 }
 
 function formatDate(value: string | null) {

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import type { Session } from "@supabase/supabase-js";
+import { getAuthCallbackRedirectTo } from "./authRedirect";
 
 type Props = {
   language: "en" | "pl";
@@ -31,6 +32,9 @@ export default function Header({ language }: Props) {
   async function handleLogin() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
+      options: {
+        redirectTo: getAuthCallbackRedirectTo(),
+      },
     });
   }
 
@@ -41,6 +45,7 @@ export default function Header({ language }: Props) {
           how: "Jak to działa?",
           about: "O projekcie",
           favorites: "Ulubione",
+          support: "☕ Wesprzyj",
           login: "Zaloguj się",
           add: "Dodaj ogłoszenie",
           account: "Konto",
@@ -50,6 +55,7 @@ export default function Header({ language }: Props) {
           how: "How it works?",
           about: "About",
           favorites: "Favorites",
+          support: "☕ Support",
           login: "Sign in",
           add: "Add listing",
           account: "Account",
@@ -58,8 +64,14 @@ export default function Header({ language }: Props) {
   const homeHref = language === "pl" ? "/pl" : "/en";
   const addHref = language === "pl" ? "/add-listing/pl" : "/add-listing/en";
   const aboutHref = language === "pl" ? "/pl/about" : "/en/about";
+  const listingsHref = `${homeHref}#listings`;
+  const howItWorksHref = `${homeHref}#how-it-works`;
+  const supportHref = `${homeHref}#support`;
   const accountLabel =
-    session?.user?.user_metadata?.name ?? session?.user?.email ?? t.login;
+    session?.user?.user_metadata?.display_name ??
+    session?.user?.user_metadata?.name ??
+    session?.user?.email ??
+    t.login;
 
   return (
     <header className="relative border-b border-[#E8E2EE] bg-white">
@@ -77,10 +89,10 @@ export default function Header({ language }: Props) {
           </a>
 
           <nav className="hidden items-center gap-8 text-sm font-semibold text-[#17142E] md:flex">
-            <a href="#listings" className="transition hover:text-[#7438B7]">
+            <a href={listingsHref} className="transition hover:text-[#7438B7]">
               {t.listings}
             </a>
-            <a href="#how-it-works" className="transition hover:text-[#7438B7]">
+            <a href={howItWorksHref} className="transition hover:text-[#7438B7]">
               {t.how}
             </a>
             <a href={aboutHref} className="transition hover:text-[#7438B7]">
@@ -100,11 +112,18 @@ export default function Header({ language }: Props) {
           </a>
 
           <a
-            href="#"
+            href="/account"
             className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"
           >
             <Heart size={21} />
             {t.favorites}
+          </a>
+
+          <a
+            href={supportHref}
+            className="hidden min-h-11 items-center rounded-full px-3 text-sm font-semibold text-[#6C5A86] transition hover:bg-[#F6F0FB] hover:text-[#7438B7] xl:inline-flex"
+          >
+            {t.support}
           </a>
 
           {session?.user ? (
@@ -150,14 +169,14 @@ export default function Header({ language }: Props) {
         <div className="absolute left-0 right-0 top-full z-50 border-b border-[#E8E2EE] bg-white px-4 pb-4 shadow-[0_18px_38px_rgba(51,36,82,0.12)] md:hidden">
           <nav className="mx-auto flex max-w-[1480px] flex-col gap-1 pt-2 text-sm font-semibold text-[#17142E]">
             <a
-              href="#listings"
+              href={listingsHref}
               onClick={() => setIsMenuOpen(false)}
               className="rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
             >
               {t.listings}
             </a>
             <a
-              href="#how-it-works"
+              href={howItWorksHref}
               onClick={() => setIsMenuOpen(false)}
               className="rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
             >
@@ -171,12 +190,19 @@ export default function Header({ language }: Props) {
               {t.about}
             </a>
             <a
-              href="#"
+              href="/account"
               onClick={() => setIsMenuOpen(false)}
               className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
             >
               <Heart size={19} />
               {t.favorites}
+            </a>
+            <a
+              href={supportHref}
+              onClick={() => setIsMenuOpen(false)}
+              className="rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
+            >
+              {t.support}
             </a>
             {session?.user ? (
               <a
