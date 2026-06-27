@@ -222,6 +222,9 @@ export default function AddListingPage({ language }: Props) {
           title: "Dodaj ogłoszenie",
           subtitle:
             "Wpisz dane włóczki, której szukasz lub którą chcesz oddać albo sprzedać.",
+          formHintTitle: "Dane z etykiety są najważniejsze",
+          formHint:
+            "Wpisz dokładnie markę, nazwę, kolor i dye lot. To pomaga innym dziewiarkom szybko sprawdzić, czy motek pasuje do ich projektu.",
           loginTitle: "Aby dodać ogłoszenie, zaloguj się przez Google.",
           loginHint:
             "Po zalogowaniu wróć do formularza i uzupełnij szczegóły włóczki.",
@@ -260,6 +263,9 @@ export default function AddListingPage({ language }: Props) {
           title: "Add listing",
           subtitle:
             "Enter the yarn details you are looking for or want to pass on or sell.",
+          formHintTitle: "Label details matter most",
+          formHint:
+            "Add the exact brand, name, color, and dye lot. It helps other makers quickly check whether the skein matches their project.",
           loginTitle: "Sign in with Google to add a listing.",
           loginHint:
             "After signing in, return to the form and add your yarn details.",
@@ -297,8 +303,8 @@ export default function AddListingPage({ language }: Props) {
   const homeHref = language === "pl" ? "/pl" : "/en";
 
   return (
-    <main className="min-h-screen bg-[#F7F4FB] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
-      <section className="mx-auto max-w-3xl">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#FBF9FF_0%,#F7F4FB_48%,#F4EFF8_100%)] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
+      <section className="mx-auto max-w-4xl">
         <Link
           href={homeHref}
           className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#6C5A86] shadow-[0_10px_28px_rgba(51,36,82,0.07)] transition hover:text-[#7438B7]"
@@ -307,7 +313,8 @@ export default function AddListingPage({ language }: Props) {
           {t.back}
         </Link>
 
-        <div className="mt-5 rounded-2xl border border-[#E8E1F0] bg-white p-6 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-8">
+        <div className="mt-5 overflow-hidden rounded-[28px] border border-[#E8E1F0] bg-white shadow-[0_22px_70px_rgba(51,36,82,0.10)]">
+          <div className="bg-[linear-gradient(135deg,#FFFFFF_0%,#F9F2FC_100%)] p-6 sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#7438B7]">
             Dyeloty
           </p>
@@ -315,9 +322,10 @@ export default function AddListingPage({ language }: Props) {
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6E6582] sm:text-base">
             {t.subtitle}
           </p>
+          </div>
 
           {!session ? (
-            <div className="mt-8 rounded-2xl bg-[#FAF8FC] p-6 text-center">
+            <div className="m-5 rounded-2xl bg-[#FAF8FC] p-6 text-center sm:m-8">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#7438B7] shadow-sm">
                 <UserRound size={25} />
               </div>
@@ -331,7 +339,7 @@ export default function AddListingPage({ language }: Props) {
               </button>
             </div>
           ) : message === t.success ? (
-            <div className="mt-8 rounded-2xl bg-[#FAF8FC] p-6 text-center">
+            <div className="m-5 rounded-2xl bg-[#FAF8FC] p-6 text-center sm:m-8">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#7438B7] shadow-sm">
                 <Plus size={25} />
               </div>
@@ -361,11 +369,24 @@ export default function AddListingPage({ language }: Props) {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="mt-8 grid gap-5">
-              <FormField id="brand" label={t.brand} value={brand} onChange={setBrand} />
-              <FormField id="yarnName" label={t.yarn} value={yarnName} onChange={setYarnName} />
-              <FormField id="color" label={t.color} value={color} onChange={setColor} />
-              <FormField id="dyelot" label={t.dyelot} value={dyelot} onChange={setDyelot} />
+            <form onSubmit={handleSubmit} className="grid gap-5 p-5 sm:p-8">
+              <div className="rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC] p-5">
+                <h2 className="text-lg font-bold text-[#17142E]">
+                  {t.formHintTitle}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[#6E6582]">
+                  {t.formHint}
+                </p>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField id="brand" label={t.brand} value={brand} onChange={setBrand} />
+                <FormField id="yarnName" label={t.yarn} value={yarnName} onChange={setYarnName} />
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField id="color" label={t.color} value={color} onChange={setColor} />
+                <FormField id="dyelot" label={t.dyelot} value={dyelot} onChange={setDyelot} />
+              </div>
 
               <div className="grid gap-5 sm:grid-cols-2">
                 <FormField

@@ -246,7 +246,7 @@ export default function EditListingPage({ params }: Props) {
 
   if (isAuthLoading || isListingLoading) {
     return (
-      <main className="min-h-screen bg-[#F7F4FB] px-4 py-12 text-[#17142E]">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#FBF9FF_0%,#F7F4FB_48%,#F4EFF8_100%)] px-4 py-12 text-[#17142E]">
         <section className="mx-auto max-w-3xl rounded-2xl border border-[#E8E1F0] bg-white p-8 shadow-[0_18px_55px_rgba(51,36,82,0.09)]">
           <div className="flex items-center gap-3 text-[#6E6582]">
             <Loader2 className="animate-spin text-[#7438B7]" size={22} />
@@ -259,7 +259,7 @@ export default function EditListingPage({ params }: Props) {
 
   if (!session?.user) {
     return (
-      <main className="min-h-screen bg-[#F7F4FB] px-4 py-12 text-[#17142E]">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#FBF9FF_0%,#F7F4FB_48%,#F4EFF8_100%)] px-4 py-12 text-[#17142E]">
         <section className="mx-auto max-w-2xl rounded-2xl border border-[#E8E1F0] bg-white p-8 text-center shadow-[0_18px_55px_rgba(51,36,82,0.09)]">
           <h1 className="text-3xl font-bold">Edytuj ogłoszenie</h1>
           <p className="mt-3 text-[#6E6582]">
@@ -278,8 +278,8 @@ export default function EditListingPage({ params }: Props) {
 
   if (message === "Zmiany zostały zapisane.") {
     return (
-      <main className="min-h-screen bg-[#F7F4FB] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
-        <section className="mx-auto max-w-3xl rounded-2xl border border-[#E8E1F0] bg-white p-8 text-center shadow-[0_18px_55px_rgba(51,36,82,0.09)]">
+      <main className="min-h-screen bg-[linear-gradient(180deg,#FBF9FF_0%,#F7F4FB_48%,#F4EFF8_100%)] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
+        <section className="mx-auto max-w-3xl rounded-[28px] border border-[#E8E1F0] bg-white p-8 text-center shadow-[0_22px_70px_rgba(51,36,82,0.10)]">
           <h1 className="text-3xl font-bold">{message}</h1>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <Link
@@ -303,8 +303,8 @@ export default function EditListingPage({ params }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-[#F7F4FB] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
-      <section className="mx-auto max-w-3xl">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#FBF9FF_0%,#F7F4FB_48%,#F4EFF8_100%)] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
+      <section className="mx-auto max-w-4xl">
         <Link
           href="/account"
           className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#6C5A86] shadow-[0_10px_28px_rgba(51,36,82,0.07)] transition hover:text-[#7438B7]"
@@ -315,19 +315,27 @@ export default function EditListingPage({ params }: Props) {
 
         <form
           onSubmit={handleSubmit}
-          className="mt-5 grid gap-5 rounded-2xl border border-[#E8E1F0] bg-white p-6 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-8"
+          className="mt-5 grid gap-5 overflow-hidden rounded-[28px] border border-[#E8E1F0] bg-white p-5 shadow-[0_22px_70px_rgba(51,36,82,0.10)] sm:p-8"
         >
-          <div>
+          <div className="-m-5 mb-1 bg-[linear-gradient(135deg,#FFFFFF_0%,#F9F2FC_100%)] p-5 sm:-m-8 sm:mb-1 sm:p-8">
             <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#7438B7]">
               Dyeloty
             </p>
             <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Edytuj ogłoszenie</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6E6582] sm:text-base">
+              Zaktualizuj tylko te dane, które się zmieniły. Zdjęcie zostanie bez zmian, jeśli nie dodasz nowego pliku.
+            </p>
           </div>
 
-          <EditField id="brand" label="Marka" value={brand} onChange={setBrand} />
-          <EditField id="yarnName" label="Nazwa włóczki" value={yarnName} onChange={setYarnName} />
-          <EditField id="color" label="Kolor" value={color} onChange={setColor} />
-          <EditField id="dyelot" label="Dye lot" value={dyelot} onChange={setDyelot} />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <EditField id="brand" label="Marka" value={brand} onChange={setBrand} />
+            <EditField id="yarnName" label="Nazwa włóczki" value={yarnName} onChange={setYarnName} />
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <EditField id="color" label="Kolor" value={color} onChange={setColor} />
+            <EditField id="dyelot" label="Dye lot" value={dyelot} onChange={setDyelot} />
+          </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <EditField

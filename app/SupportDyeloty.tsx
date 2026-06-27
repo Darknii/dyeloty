@@ -4,12 +4,12 @@ type Props = {
 
 export default function SupportDyeloty({ language }: Props) {
   return (
-    <section className="mt-16 border-t border-[#ECE7DF] pt-8">
+    <section id="support" className="mt-16 border-t border-[#ECE7DF] pt-8">
 
       <div className="flex flex-col items-center justify-center gap-3 text-center text-[#6F6F6F] md:flex-row">
 
-        <span className="text-lg">
-          ☕ {language === "pl"
+        <span className="text-lg font-semibold text-[#17142E]">
+          {language === "pl"
             ? "Podoba Ci się Dyeloty?"
             : "Enjoying Dyeloty?"}
         </span>
@@ -20,11 +20,14 @@ export default function SupportDyeloty({ language }: Props) {
             : "Support the project."}
         </span>
 
-        <button className="font-medium text-[#90A885] transition hover:text-[#7E9575]">
+        <a
+          href={language === "pl" ? "/pl/about#support" : "/en/about#support"}
+          className="font-semibold text-[#7438B7] transition hover:text-[#622CA2]"
+        >
           {language === "pl"
-            ? "Postaw kawę →"
-            : "Buy me a coffee →"}
-        </button>
+            ? "Wesprzyj Dyeloty →"
+            : "Support Dyeloty →"}
+        </a>
 
       </div>
 

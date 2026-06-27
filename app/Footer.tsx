@@ -50,8 +50,11 @@ export default function Footer({ language }: Props) {
             {language === "pl" ? "Polityka prywatności" : "Privacy Policy"}
           </a>
 
-          <a href="#support" className="transition hover:text-[#7438B7]">
-            ☕ {language === "pl" ? "Wesprzyj Dyeloty" : "Support Dyeloty"}
+          <a
+            href={language === "pl" ? "/pl/about#support" : "/en/about#support"}
+            className="transition hover:text-[#7438B7]"
+          >
+            {language === "pl" ? "Wesprzyj Dyeloty" : "Support Dyeloty"}
           </a>
         </div>
 
