@@ -6,6 +6,11 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../supabase";
+import {
+  LISTING_STATUS_OPTIONS,
+  normalizeListingStatus,
+  type ListingStatus,
+} from "../../listingStatus";
 
 type Props = {
   params: Promise<{
@@ -23,6 +28,7 @@ type Listing = {
   country: string | null;
   contact: string | null;
   type: string | null;
+  status: string | null;
   image_url: string | null;
 };
 
@@ -44,6 +50,7 @@ export default function EditListingPage({ params }: Props) {
   const [skeins, setSkeins] = useState("");
   const [country, setCountry] = useState("");
   const [listingUrl, setListingUrl] = useState("");
+  const [status, setStatus] = useState<ListingStatus>("available");
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -74,7 +81,7 @@ export default function EditListingPage({ params }: Props) {
 
       const { data, error } = await supabase
         .from("listings")
-        .select("id, brand, yarn_name, color, dyelot, skeins, country, contact, type, image_url")
+        .select("id, brand, yarn_name, color, dyelot, skeins, country, contact, type, status, image_url")
         .eq("id", id)
         .eq("user_id", userId)
         .single<Listing>();
@@ -93,6 +100,7 @@ export default function EditListingPage({ params }: Props) {
       setSkeins(data.skeins === null ? "" : String(data.skeins));
       setCountry(data.country ?? "");
       setListingUrl(data.contact ?? "");
+      setStatus(normalizeListingStatus(data.status));
       setCurrentImageUrl(data.image_url ?? "");
     }
 
@@ -176,6 +184,7 @@ export default function EditListingPage({ params }: Props) {
         country: country.trim(),
         contact: parsedUrl.toString(),
         type,
+        status,
         image_url: uploadedImageUrl ?? (currentImageUrl || null),
       })
       .eq("id", id)
@@ -327,6 +336,26 @@ export default function EditListingPage({ params }: Props) {
             </p>
           </div>
 
+          <QualityChecklist />
+
+          <div>
+            <label htmlFor="status" className="mb-2 block text-sm font-semibold text-[#514A67]">
+              Status ogłoszenia
+            </label>
+            <select
+              id="status"
+              value={status}
+              onChange={(event) => setStatus(event.target.value as ListingStatus)}
+              className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition focus:border-[#A875D2]"
+            >
+              {LISTING_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid gap-5 sm:grid-cols-2">
             <EditField id="brand" label="Marka" value={brand} onChange={setBrand} />
             <EditField id="yarnName" label="Nazwa włóczki" value={yarnName} onChange={setYarnName} />
@@ -431,6 +460,32 @@ function EditField({
         className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition placeholder:text-[#9489AA] focus:border-[#A875D2]"
         required
       />
+    </div>
+  );
+}
+
+function QualityChecklist() {
+  const items = [
+    "zdjęcie włóczki lub etykiety",
+    "numer partii / dye lot",
+    "liczbę motków",
+    "metraż i gramaturę",
+    "informację, czy włóczka jest nowa, napoczęta czy z odzysku",
+  ];
+
+  return (
+    <div className="rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC] p-5">
+      <h2 className="text-sm font-bold uppercase tracking-[0.08em] text-[#7438B7]">
+        Dobre ogłoszenie zawiera:
+      </h2>
+      <ul className="mt-3 grid gap-2 text-sm leading-6 text-[#6E6582] sm:grid-cols-2">
+        {items.map((item) => (
+          <li key={item} className="flex gap-2">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#B98BE0]" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

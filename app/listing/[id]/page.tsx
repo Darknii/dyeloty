@@ -15,6 +15,11 @@ import type { ReactNode } from "react";
 import { supabase } from "../../supabase";
 import FavoriteButton from "../../FavoriteButton";
 import OwnerListingActions from "../../OwnerListingActions";
+import {
+  getListingStatusClassName,
+  getListingStatusLabel,
+  normalizeListingStatus,
+} from "../../listingStatus";
 
 type Listing = {
   id: number;
@@ -49,7 +54,6 @@ export default async function ListingDetailsPage({ params }: Props) {
     .from("listings")
     .select("*")
     .eq("id", id)
-    .eq("status", "active")
     .single<Listing>();
 
   if (error || !listing) {
@@ -59,6 +63,8 @@ export default async function ListingDetailsPage({ params }: Props) {
   const imageUrl = getListingImageUrl(listing);
   const addedAt = formatDate(listing.created_at);
   const marketplace = getMarketplaceName(listing.type);
+  const normalizedStatus = normalizeListingStatus(listing.status);
+  const statusLabel = getListingStatusLabel(listing.status);
 
   return (
     <main className="min-h-screen bg-[#F8F6FB] text-[#1F1830]">
@@ -106,15 +112,15 @@ export default async function ListingDetailsPage({ params }: Props) {
                 Dodane {addedAt}
               </div>
 
-              {listing.status ? (
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[#DDF7E9] px-3 py-1.5 text-sm font-semibold text-[#287A4D]">
-                    <CheckCircle2 size={16} />
-                    Aktywne
-                  </span>
-                  <FavoriteButton listingId={listing.id} />
-                </div>
-              ) : null}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold ${getListingStatusClassName(listing.status)}`}
+                >
+                  <CheckCircle2 size={16} />
+                  {statusLabel}
+                </span>
+                <FavoriteButton listingId={listing.id} />
+              </div>
             </div>
 
             <div className="mt-6">
@@ -139,6 +145,12 @@ export default async function ListingDetailsPage({ params }: Props) {
               </div>
 
               <OwnerListingActions listingId={listing.id} ownerId={listing.user_id} />
+
+              {normalizedStatus === "sold" ? (
+                <div className="mt-5 rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC] p-4 text-sm leading-6 text-[#6E6582]">
+                  To ogłoszenie jest oznaczone jako sprzedane lub nieaktualne. Link zewnętrzny może już nie prowadzić do dostępnej oferty.
+                </div>
+              ) : null}
             </div>
 
             <div className="mt-7 hidden gap-3 sm:grid-cols-2 lg:grid">
@@ -170,7 +182,7 @@ export default async function ListingDetailsPage({ params }: Props) {
               <DetailItem
                 icon={<CheckCircle2 size={20} />}
                 label="Status"
-                value={listing.status === "active" ? "Aktywne" : listing.status}
+                value={statusLabel}
               />
             </div>
 
@@ -236,7 +248,7 @@ export default async function ListingDetailsPage({ params }: Props) {
               <DetailItem
                 icon={<CheckCircle2 size={20} />}
                 label="Status"
-                value={listing.status === "active" ? "Aktywne" : listing.status}
+                value={statusLabel}
               />
             </div>
 

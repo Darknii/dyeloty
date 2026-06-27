@@ -10,6 +10,11 @@ import FavoriteButton from "./FavoriteButton";
 import Link from "next/link";
 import { connection } from "next/server";
 import type { ReactNode } from "react";
+import {
+  getListingStatusClassName,
+  getListingStatusLabel,
+  normalizeListingStatus,
+} from "./listingStatus";
 
 type Props = {
   language: "en" | "pl";
@@ -31,6 +36,7 @@ type Listing = {
   dyelot: string | null;
   skeins: number | null;
   country: string | null;
+  status: string | null;
   image_url?: string | null;
   photo_url?: string | null;
   photos?: unknown;
@@ -74,7 +80,6 @@ export default async function Listings({ language, filters = {} }: Props) {
   let query = supabase
     .from("listings")
     .select("*")
-    .eq("status", "active")
     .order("created_at", { ascending: false });
 
   const q = filters.q?.trim();
@@ -139,6 +144,7 @@ export default async function Listings({ language, filters = {} }: Props) {
       {listings.map((listing) => {
         const imageUrl = getListingImageUrl(listing);
         const showNewBadge = isNewListing(listing.created_at);
+        const normalizedStatus = normalizeListingStatus(listing.status);
 
         return (
           <Link
@@ -146,7 +152,11 @@ export default async function Listings({ language, filters = {} }: Props) {
             href={`/listing/${listing.id}`}
             className="group block min-w-0 rounded-2xl outline-none transition focus-visible:ring-2 focus-visible:ring-[#7438B7] focus-visible:ring-offset-2"
           >
-            <article className="h-full overflow-hidden rounded-2xl border border-[#E5DDEC] bg-white shadow-[0_12px_34px_rgba(51,36,82,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_18px_48px_rgba(51,36,82,0.13)]">
+            <article
+              className={`h-full overflow-hidden rounded-2xl border border-[#E5DDEC] bg-white shadow-[0_12px_34px_rgba(51,36,82,0.08)] transition duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_18px_48px_rgba(51,36,82,0.13)] ${
+                normalizedStatus === "sold" ? "opacity-80" : ""
+              }`}
+            >
               <div className="relative h-36 overflow-hidden bg-[#F5F1FA] sm:h-40">
                 {imageUrl ? (
                   <div
@@ -190,6 +200,12 @@ export default async function Listings({ language, filters = {} }: Props) {
                 <p className="mt-1 text-[15px] text-[#332B4D]">
                   {listing.color ?? "-"}
                 </p>
+
+                <span
+                  className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getListingStatusClassName(listing.status)}`}
+                >
+                  {getListingStatusLabel(listing.status)}
+                </span>
 
                 <div className="mt-4 grid gap-2 text-xs font-medium text-[#6E6582]">
                   <MetaItem

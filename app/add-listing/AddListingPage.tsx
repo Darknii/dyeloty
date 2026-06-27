@@ -133,7 +133,7 @@ export default function AddListingPage({ language }: Props) {
         skeins: skeinsCount,
         country: country.trim(),
         contact: parsedUrl.toString(),
-        status: "active",
+        status: "available",
         type,
         user_id: session.user.id,
         image_url: imageUrl,
@@ -225,6 +225,14 @@ export default function AddListingPage({ language }: Props) {
           formHintTitle: "Dane z etykiety są najważniejsze",
           formHint:
             "Wpisz dokładnie markę, nazwę, kolor i dye lot. To pomaga innym dziewiarkom szybko sprawdzić, czy motek pasuje do ich projektu.",
+          checklistTitle: "Dobre ogłoszenie zawiera:",
+          checklistItems: [
+            "zdjęcie włóczki lub etykiety",
+            "numer partii / dye lot",
+            "liczbę motków",
+            "metraż i gramaturę",
+            "informację, czy włóczka jest nowa, napoczęta czy z odzysku",
+          ],
           loginTitle: "Aby dodać ogłoszenie, zaloguj się przez Google.",
           loginHint:
             "Po zalogowaniu wróć do formularza i uzupełnij szczegóły włóczki.",
@@ -266,6 +274,14 @@ export default function AddListingPage({ language }: Props) {
           formHintTitle: "Label details matter most",
           formHint:
             "Add the exact brand, name, color, and dye lot. It helps other makers quickly check whether the skein matches their project.",
+          checklistTitle: "A good listing includes:",
+          checklistItems: [
+            "a photo of the yarn or label",
+            "the dye lot number",
+            "number of skeins",
+            "length and weight",
+            "whether the yarn is new, started, or reclaimed",
+          ],
           loginTitle: "Sign in with Google to add a listing.",
           loginHint:
             "After signing in, return to the form and add your yarn details.",
@@ -378,6 +394,8 @@ export default function AddListingPage({ language }: Props) {
                   {t.formHint}
                 </p>
               </div>
+
+              <QualityChecklist title={t.checklistTitle} items={t.checklistItems} />
               <div className="grid gap-5 sm:grid-cols-2">
                 <FormField id="brand" label={t.brand} value={brand} onChange={setBrand} />
                 <FormField id="yarnName" label={t.yarn} value={yarnName} onChange={setYarnName} />
@@ -490,6 +508,30 @@ function FormField({
         className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition placeholder:text-[#9489AA] focus:border-[#A875D2]"
         required
       />
+    </div>
+  );
+}
+
+function QualityChecklist({
+  title,
+  items,
+}: {
+  title: string;
+  items: string[];
+}) {
+  return (
+    <div className="rounded-2xl border border-[#E8E1F0] bg-white p-5 shadow-[0_8px_22px_rgba(51,36,82,0.05)]">
+      <h2 className="text-sm font-bold uppercase tracking-[0.08em] text-[#7438B7]">
+        {title}
+      </h2>
+      <ul className="mt-3 grid gap-2 text-sm leading-6 text-[#6E6582] sm:grid-cols-2">
+        {items.map((item) => (
+          <li key={item} className="flex gap-2">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#B98BE0]" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

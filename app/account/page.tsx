@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   CalendarDays,
-  CheckCircle2,
   Eye,
   Heart,
   LogOut,
@@ -19,6 +18,13 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 import { getAuthCallbackRedirectTo } from "../authRedirect";
+import {
+  LISTING_STATUS_OPTIONS,
+  getListingStatusClassName,
+  getListingStatusLabel,
+  normalizeListingStatus,
+  type ListingStatus,
+} from "../listingStatus";
 
 type Listing = {
   id: number;
@@ -275,16 +281,8 @@ export default function AccountPage() {
     );
   }
 
-  async function handleMarkAsSold(listingId: number) {
+  async function handleUpdateStatus(listingId: number, status: ListingStatus) {
     if (!session?.user) {
-      return;
-    }
-
-    const confirmed = window.confirm(
-      "Czy na pewno chcesz oznaczyć to ogłoszenie jako sprzedane?",
-    );
-
-    if (!confirmed) {
       return;
     }
 
@@ -293,7 +291,7 @@ export default function AccountPage() {
 
     const { error } = await supabase
       .from("listings")
-      .update({ status: "sold" })
+      .update({ status })
       .eq("id", listingId)
       .eq("user_id", session.user.id);
 
@@ -492,9 +490,9 @@ export default function AccountPage() {
                           </h3>
                           {listing.status ? (
                             <span
-                              className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(listing.status)}`}
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${getListingStatusClassName(listing.status)}`}
                             >
-                              {getStatusLabel(listing.status)}
+                              {getListingStatusLabel(listing.status)}
                             </span>
                           ) : null}
                         </div>
@@ -581,9 +579,9 @@ export default function AccountPage() {
                         </h3>
                         {listing.status ? (
                           <span
-                            className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(listing.status)}`}
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${getListingStatusClassName(listing.status)}`}
                           >
-                            {getStatusLabel(listing.status)}
+                            {getListingStatusLabel(listing.status)}
                           </span>
                         ) : null}
                       </div>
@@ -622,21 +620,26 @@ export default function AccountPage() {
                         <Pencil size={17} />
                         Edytuj
                       </Link>
-                      {listing.status === "active" ? (
-                        <button
-                          type="button"
-                          onClick={() => void handleMarkAsSold(listing.id)}
+                      <label className="grid gap-1 text-xs font-semibold text-[#6E6582]">
+                        Status
+                        <select
+                          value={normalizeListingStatus(listing.status)}
+                          onChange={(event) =>
+                            void handleUpdateStatus(
+                              listing.id,
+                              event.target.value as ListingStatus,
+                            )
+                          }
                           disabled={updatingStatusId === listing.id}
-                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB] disabled:cursor-not-allowed disabled:opacity-60"
+                          className="min-h-11 rounded-xl border border-[#D8CCE7] bg-white px-3 text-sm font-semibold text-[#7438B7] outline-none transition hover:bg-[#F6F0FB] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {updatingStatusId === listing.id ? (
-                            <Loader2 className="animate-spin" size={17} />
-                          ) : (
-                            <CheckCircle2 size={17} />
-                          )}
-                          Oznacz jako sprzedane
-                        </button>
-                      ) : null}
+                          {LISTING_STATUS_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                       <button
                         type="button"
                         onClick={() => void handleDelete(listing.id)}
@@ -683,34 +686,6 @@ function AccountFact({ label, value }: { label: string; value: string | null }) 
       <dd className="mt-1 truncate font-semibold text-[#332B4D]">{value ?? "-"}</dd>
     </div>
   );
-}
-
-function getStatusLabel(status: string | null) {
-  if (status === "active") {
-    return "Aktywne";
-  }
-
-  if (status === "sold") {
-    return "Sprzedane";
-  }
-
-  if (status === "found") {
-    return "Znalezione";
-  }
-
-  if (status === "inactive") {
-    return "Nieaktywne";
-  }
-
-  return status ?? "-";
-}
-
-function getStatusClassName(status: string | null) {
-  if (status === "active") {
-    return "bg-[#DDF7E9] text-[#287A4D]";
-  }
-
-  return "bg-[#F4EEF9] text-[#7438B7]";
 }
 
 function getSessionDisplayName(session: Session | null) {
