@@ -176,7 +176,7 @@ export default async function Listings({ language, filters = {} }: Props) {
                 <FavoriteButton
                   listingId={listing.id}
                   language={language}
-                  className="absolute right-3 top-3"
+                  className="absolute right-3 top-3 z-20"
                 />
               </div>
 

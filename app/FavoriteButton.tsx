@@ -128,7 +128,7 @@ export default function FavoriteButton({
   }
 
   return (
-    <span className={`relative z-10 inline-flex ${className}`}>
+    <span className={`inline-flex ${className}`}>
       <button
         type="button"
         onClick={handleToggle}
@@ -136,7 +136,7 @@ export default function FavoriteButton({
         aria-pressed={isFavorite}
         aria-label={isFavorite ? t.remove : t.add}
         title={message || (isFavorite ? t.remove : t.add)}
-        className={`flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:bg-[#F6F0FB] disabled:cursor-not-allowed disabled:opacity-70 ${
+        className={`flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/95 shadow-[0_8px_20px_rgba(51,36,82,0.16)] transition hover:bg-[#F6F0FB] disabled:cursor-not-allowed disabled:opacity-70 ${
           isFavorite ? "text-[#7438B7]" : "text-[#6C5A86]"
         }`}
       >
