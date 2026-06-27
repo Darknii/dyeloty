@@ -45,7 +45,7 @@ export default function Header({ language }: Props) {
           how: "Jak to działa?",
           about: "O projekcie",
           favorites: "Ulubione",
-          support: "☕ Wesprzyj",
+          support: "Wesprzyj Dyeloty",
           login: "Zaloguj się",
           add: "Dodaj ogłoszenie",
           account: "Konto",
@@ -55,7 +55,7 @@ export default function Header({ language }: Props) {
           how: "How it works?",
           about: "About",
           favorites: "Favorites",
-          support: "☕ Support",
+          support: "Support Dyeloty",
           login: "Sign in",
           add: "Add listing",
           account: "Account",
@@ -66,7 +66,7 @@ export default function Header({ language }: Props) {
   const aboutHref = language === "pl" ? "/pl/about" : "/en/about";
   const listingsHref = `${homeHref}#listings`;
   const howItWorksHref = `${homeHref}#how-it-works`;
-  const supportHref = `${homeHref}#support`;
+  const supportHref = "https://buymeacoffee.com/dyelotyapp";
   const accountLabel =
     session?.user?.user_metadata?.display_name ??
     session?.user?.user_metadata?.name ??
@@ -98,6 +98,14 @@ export default function Header({ language }: Props) {
             <a href={aboutHref} className="transition hover:text-[#7438B7]">
               {t.about}
             </a>
+            <a
+              href={supportHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-[#7438B7]"
+            >
+              {t.support}
+            </a>
           </nav>
         </div>
 
@@ -117,13 +125,6 @@ export default function Header({ language }: Props) {
           >
             <Heart size={21} />
             {t.favorites}
-          </a>
-
-          <a
-            href={supportHref}
-            className="hidden min-h-11 items-center rounded-full px-3 text-sm font-semibold text-[#6C5A86] transition hover:bg-[#F6F0FB] hover:text-[#7438B7] xl:inline-flex"
-          >
-            {t.support}
           </a>
 
           {session?.user ? (
@@ -199,6 +200,8 @@ export default function Header({ language }: Props) {
             </a>
             <a
               href={supportHref}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setIsMenuOpen(false)}
               className="rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
             >

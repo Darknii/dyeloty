@@ -61,10 +61,21 @@ export default function HomePage({ language, filters = {} }: Props) {
           statsSafe: "Bezpieczne zakupy",
           statsSafeSub: "i kontakt ze sprzedającym",
           howTitle: "Jak to działa?",
+          howIntro:
+            "Najpierw sprawdź etykietę i numer partii farbowania. Potem Dyeloty pomaga znaleźć osoby, które mają właśnie ten brakujący motek.",
           howSteps: [
-            "Wpisz markę, kolor albo dye lot.",
-            "Sprawdź ogłoszenia innych dziewiarek.",
-            "Przejdź do OLX lub Vinted i dokończ kontakt ze sprzedającą.",
+            {
+              title: "Spisz dane z etykiety",
+              text: "Marka, nazwa włóczki, kolor i dye lot wystarczą, żeby zacząć sensowne szukanie.",
+            },
+            {
+              title: "Przejrzyj ogłoszenia",
+              text: "Zobacz motki dodane przez inne dziewiarki i porównaj najważniejsze szczegóły partii.",
+            },
+            {
+              title: "Dokończ zakup poza Dyeloty",
+              text: "Gdy znajdziesz pasujący motek, przejdź do OLX albo Vinted i dogadaj szczegóły bezpośrednio ze sprzedającą.",
+            },
           ],
         }
       : {
@@ -98,10 +109,21 @@ export default function HomePage({ language, filters = {} }: Props) {
           statsSafe: "Safe buying",
           statsSafeSub: "with seller contact",
           howTitle: "How it works?",
+          howIntro:
+            "Start with the yarn label and dye lot number. Dyeloty helps you find people who may have the missing skein from that exact batch.",
           howSteps: [
-            "Enter a brand, color, or dye lot.",
-            "Check listings from other makers.",
-            "Open OLX or Vinted and finish the conversation with the seller.",
+            {
+              title: "Read the label",
+              text: "Brand, yarn name, color, and dye lot are enough to start a useful search.",
+            },
+            {
+              title: "Browse listings",
+              text: "Check skeins added by other makers and compare the details that matter for a matching batch.",
+            },
+            {
+              title: "Finish outside Dyeloty",
+              text: "When you find a match, open OLX or Vinted and complete the purchase directly with the seller.",
+            },
           ],
         };
 
@@ -226,21 +248,35 @@ export default function HomePage({ language, filters = {} }: Props) {
           </div>
         </section>
 
-        <section id="how-it-works" className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-5 shadow-[0_12px_38px_rgba(51,36,82,0.08)] sm:p-6">
-          <h2 className="text-2xl font-bold tracking-normal text-[#17142E]">
-            {t.howTitle}
-          </h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
+        <section id="how-it-works" className="mt-6 overflow-hidden rounded-2xl border border-[#E8E1F0] bg-white shadow-[0_12px_38px_rgba(51,36,82,0.08)]">
+          <div className="grid gap-0 lg:grid-cols-[0.34fr_0.66fr]">
+            <div className="bg-[linear-gradient(135deg,#F8F1FB_0%,#FFF8FB_100%)] p-6 sm:p-8">
+              <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#7438B7]">
+                Dyeloty
+              </p>
+              <h2 className="mt-2 text-2xl font-bold tracking-normal text-[#17142E] sm:text-3xl">
+                {t.howTitle}
+              </h2>
+              <p className="mt-4 text-sm leading-6 text-[#6E6582] sm:text-base">
+                {t.howIntro}
+              </p>
+            </div>
+
+            <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-3">
             {t.howSteps.map((step, index) => (
-              <div key={step} className="rounded-2xl bg-[#FAF8FC] p-5">
+              <div key={step.title} className="rounded-2xl bg-[#FAF8FC] p-5">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F1EAF8] text-sm font-bold text-[#7438B7]">
                   {index + 1}
                 </div>
-                <p className="mt-4 text-sm font-semibold leading-6 text-[#332B4D]">
-                  {step}
+                <h3 className="mt-4 text-base font-bold text-[#17142E]">
+                  {step.title}
+                </h3>
+                <p className="mt-2 text-sm font-medium leading-6 text-[#6E6582]">
+                  {step.text}
                 </p>
               </div>
             ))}
+            </div>
           </div>
         </section>
 

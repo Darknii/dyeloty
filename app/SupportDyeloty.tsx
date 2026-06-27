@@ -21,12 +21,14 @@ export default function SupportDyeloty({ language }: Props) {
         </span>
 
         <a
-          href={language === "pl" ? "/pl/about#support" : "/en/about#support"}
+          href="https://buymeacoffee.com/dyelotyapp"
+          target="_blank"
+          rel="noopener noreferrer"
           className="font-semibold text-[#7438B7] transition hover:text-[#622CA2]"
         >
           {language === "pl"
-            ? "Wesprzyj Dyeloty →"
-            : "Support Dyeloty →"}
+            ? "Wesprzyj Dyeloty"
+            : "Support Dyeloty"}
         </a>
 
       </div>

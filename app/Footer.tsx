@@ -51,7 +51,9 @@ export default function Footer({ language }: Props) {
           </a>
 
           <a
-            href={language === "pl" ? "/pl/about#support" : "/en/about#support"}
+            href="https://buymeacoffee.com/dyelotyapp"
+            target="_blank"
+            rel="noopener noreferrer"
             className="transition hover:text-[#7438B7]"
           >
             {language === "pl" ? "Wesprzyj Dyeloty" : "Support Dyeloty"}
