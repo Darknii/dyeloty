@@ -1,12 +1,12 @@
 import { supabase } from "./supabase";
 import {
-  Heart,
   Hash,
   ImageIcon,
   MapPin,
   Package,
   Scale,
 } from "lucide-react";
+import FavoriteButton from "./FavoriteButton";
 import Link from "next/link";
 import { connection } from "next/server";
 import type { ReactNode } from "react";
@@ -23,7 +23,7 @@ type Props = {
 };
 
 type Listing = {
-  id: string;
+  id: number;
   created_at: string | null;
   brand: string | null;
   yarn_name: string | null;
@@ -48,7 +48,6 @@ export default async function Listings({ language, filters = {} }: Props) {
           errorTitle: "Nie udało się pobrać ogłoszeń",
           noPhoto: "Zdjęcie niedostępne",
           newBadge: "NOWE",
-          dealBadge: "OKAZJA",
           skeinOne: "motek",
           skeinFew: "motki",
           skeinMany: "motków",
@@ -63,7 +62,6 @@ export default async function Listings({ language, filters = {} }: Props) {
           errorTitle: "Could not load listings",
           noPhoto: "Photo unavailable",
           newBadge: "NEW",
-          dealBadge: "DEAL",
           skeinOne: "skein",
           skeinFew: "skeins",
           skeinMany: "skeins",
@@ -138,9 +136,9 @@ export default async function Listings({ language, filters = {} }: Props) {
 
   return (
     <div className="mt-5 grid gap-5 sm:mt-6 md:grid-cols-2 xl:grid-cols-4">
-      {listings.map((listing, index) => {
+      {listings.map((listing) => {
         const imageUrl = getListingImageUrl(listing);
-        const badge = index === 2 ? t.dealBadge : t.newBadge;
+        const showNewBadge = isNewListing(listing.created_at);
 
         return (
           <Link
@@ -170,30 +168,30 @@ export default async function Listings({ language, filters = {} }: Props) {
                   </div>
                 )}
 
-                <span
-                  className={`absolute left-3 top-3 rounded-md px-3 py-1 text-xs font-bold text-white ${
-                    index === 2 ? "bg-[#4CA86D]" : "bg-[#8C5CCD]"
-                  }`}
-                >
-                  {badge}
-                </span>
-                <span className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-[#6C5A86] shadow-sm">
-                  <Heart size={19} />
-                </span>
+                {showNewBadge ? (
+                  <span className="absolute left-3 top-3 rounded-md bg-[#8C5CCD] px-3 py-1 text-xs font-bold text-white">
+                    {t.newBadge}
+                  </span>
+                ) : null}
+                <FavoriteButton
+                  listingId={listing.id}
+                  language={language}
+                  className="absolute right-3 top-3"
+                />
               </div>
 
               <div className="p-4">
-                <h3 className="truncate text-lg font-bold leading-tight text-[#17142E]">
+                <h3 className="text-lg font-bold leading-tight text-[#17142E]">
                   {listing.brand ?? "-"}
                 </h3>
-                <p className="mt-1 truncate text-[15px] font-semibold text-[#332B4D]">
+                <p className="mt-1 text-[15px] font-semibold text-[#332B4D]">
                   {listing.yarn_name ?? "-"}
                 </p>
-                <p className="mt-1 truncate text-[15px] text-[#332B4D]">
+                <p className="mt-1 text-[15px] text-[#332B4D]">
                   {listing.color ?? "-"}
                 </p>
 
-                <div className="mt-4 grid grid-cols-3 gap-2 text-xs font-medium text-[#6E6582]">
+                <div className="mt-4 grid gap-2 text-xs font-medium text-[#6E6582]">
                   <MetaItem
                     icon={<Package size={14} />}
                     value={formatSkeins(listing.skeins, t)}
@@ -208,7 +206,7 @@ export default async function Listings({ language, filters = {} }: Props) {
                 {listing.country ? (
                   <div className="mt-5 flex min-w-0 items-center gap-2 text-sm font-medium text-[#6E6582]">
                     <MapPin size={16} className="shrink-0 text-[#7A3FC5]" />
-                    <span className="truncate">{listing.country}</span>
+                    <span>{listing.country}</span>
                   </div>
                 ) : null}
               </div>
@@ -226,11 +224,26 @@ function escapeSupabaseFilterValue(value: string) {
 
 function MetaItem({ icon, value }: { icon: ReactNode; value: string | null }) {
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
+    <div className="flex min-w-0 items-start gap-1.5">
       <span className="shrink-0 text-[#7A3FC5]">{icon}</span>
-      <span className="min-w-0 truncate">{value ?? "-"}</span>
+      <span className="min-w-0 break-words">{value ?? "-"}</span>
     </div>
   );
+}
+
+function isNewListing(createdAt: string | null) {
+  if (!createdAt) {
+    return false;
+  }
+
+  const createdTime = new Date(createdAt).getTime();
+
+  if (!Number.isFinite(createdTime)) {
+    return false;
+  }
+
+  const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+  return Date.now() - createdTime <= sevenDaysInMs;
 }
 
 function formatSkeins(

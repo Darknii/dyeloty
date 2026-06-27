@@ -10,6 +10,7 @@ import {
   Eye,
   Loader2,
   Package,
+  Pencil,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -18,7 +19,7 @@ import { supabase } from "../supabase";
 import { getAuthCallbackRedirectTo } from "../authRedirect";
 
 type Listing = {
-  id: string;
+  id: number;
   created_at: string | null;
   brand: string | null;
   yarn_name: string | null;
@@ -35,8 +36,8 @@ export default function AccountPage() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [isListingsLoading, setIsListingsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
@@ -128,7 +129,7 @@ export default function AccountPage() {
     setProfileMessage("Nazwa została zapisana.");
   }
 
-  async function handleDelete(listingId: string) {
+  async function handleDelete(listingId: number) {
     if (!session?.user) {
       return;
     }
@@ -158,7 +159,7 @@ export default function AccountPage() {
     await loadListings(session.user.id);
   }
 
-  async function handleMarkAsSold(listingId: string) {
+  async function handleMarkAsSold(listingId: number) {
     if (!session?.user) {
       return;
     }
@@ -369,6 +370,13 @@ export default function AccountPage() {
                       >
                         <Eye size={17} />
                         Zobacz
+                      </Link>
+                      <Link
+                        href={`/edit-listing/${listing.id}`}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]"
+                      >
+                        <Pencil size={17} />
+                        Edytuj
                       </Link>
                       {listing.status === "active" ? (
                         <button

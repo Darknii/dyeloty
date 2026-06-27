@@ -13,9 +13,10 @@ import {
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { supabase } from "../../supabase";
+import FavoriteButton from "../../FavoriteButton";
 
 type Listing = {
-  id: string;
+  id: number;
   created_at: string | null;
   brand: string | null;
   yarn_name: string | null;
@@ -75,10 +76,10 @@ export default async function ListingDetailsPage({ params, searchParams }: Props
 
         <div className="mt-7 grid overflow-hidden rounded-2xl border border-[#E8E1F0] bg-white shadow-[0_18px_55px_rgba(51,36,82,0.10)] lg:grid-cols-[0.42fr_0.58fr]">
           <section className="order-2 border-[#E8E1F0] p-5 sm:p-6 lg:order-1 lg:border-r">
-            <div className="h-[240px] overflow-hidden rounded-2xl border border-[#E8E1F0] bg-[#F5F1FA] sm:h-[280px] lg:h-[440px]">
+            <div className="flex h-[240px] items-center justify-center overflow-hidden rounded-2xl border border-[#E8E1F0] bg-[#F5F1FA] sm:h-[280px] lg:max-h-[520px] lg:min-h-[360px]">
               {imageUrl ? (
                 <div
-                  className="h-full w-full bg-cover bg-center"
+                  className="h-full w-full bg-contain bg-center bg-no-repeat"
                   role="img"
                   aria-label={`${listing.brand ?? ""} ${listing.yarn_name ?? ""}`.trim()}
                   style={{ backgroundImage: `url(${imageUrl})` }}
@@ -109,10 +110,13 @@ export default async function ListingDetailsPage({ params, searchParams }: Props
               </div>
 
               {listing.status ? (
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#DDF7E9] px-3 py-1.5 text-sm font-semibold text-[#287A4D]">
-                  <CheckCircle2 size={16} />
-                  Aktywne
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[#DDF7E9] px-3 py-1.5 text-sm font-semibold text-[#287A4D]">
+                    <CheckCircle2 size={16} />
+                    Aktywne
+                  </span>
+                  <FavoriteButton listingId={listing.id} />
+                </div>
               ) : null}
             </div>
 
