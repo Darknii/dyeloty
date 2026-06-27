@@ -6,7 +6,7 @@ import { Heart, Loader2 } from "lucide-react";
 import { supabase } from "./supabase";
 
 type Props = {
-  listingId: number;
+  listingId: number | string;
   language?: "en" | "pl";
   className?: string;
 };
@@ -20,6 +20,8 @@ export default function FavoriteButton({
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const normalizedListingId = String(listingId);
+  const hasValidListingId = /^\d+$/.test(normalizedListingId);
 
   const t =
     language === "pl"
@@ -51,7 +53,7 @@ export default function FavoriteButton({
       const currentUserId = session?.user?.id ?? null;
       setUserId(currentUserId);
 
-      if (!currentUserId) {
+      if (!currentUserId || !hasValidListingId) {
         setIsFavorite(false);
         return;
       }
@@ -60,7 +62,7 @@ export default function FavoriteButton({
         .from("favorites")
         .select("listing_id")
         .eq("user_id", currentUserId)
-        .eq("listing_id", listingId)
+        .eq("listing_id", normalizedListingId)
         .maybeSingle();
 
       if (!isMounted) {
@@ -74,10 +76,17 @@ export default function FavoriteButton({
 
     void loadFavorite();
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void loadFavorite();
+    });
+
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
-  }, [listingId]);
+  }, [hasValidListingId, normalizedListingId]);
 
   async function handleToggle(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -90,6 +99,11 @@ export default function FavoriteButton({
       return;
     }
 
+    if (!hasValidListingId) {
+      setMessage(t.error);
+      return;
+    }
+
     setIsLoading(true);
 
     const { error } = isFavorite
@@ -97,10 +111,10 @@ export default function FavoriteButton({
           .from("favorites")
           .delete()
           .eq("user_id", userId)
-          .eq("listing_id", listingId)
+          .eq("listing_id", normalizedListingId)
       : await supabase.from("favorites").insert({
           user_id: userId,
-          listing_id: listingId,
+          listing_id: normalizedListingId,
         });
 
     setIsLoading(false);
@@ -114,7 +128,7 @@ export default function FavoriteButton({
   }
 
   return (
-    <span className={`relative inline-flex ${className}`}>
+    <span className={`relative z-10 inline-flex ${className}`}>
       <button
         type="button"
         onClick={handleToggle}

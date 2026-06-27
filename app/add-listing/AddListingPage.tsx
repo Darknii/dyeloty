@@ -26,7 +26,7 @@ export default function AddListingPage({ language }: Props) {
   const [listingUrl, setListingUrl] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [publishedListingId, setPublishedListingId] = useState<string | null>(null);
+  const [publishedListingId, setPublishedListingId] = useState<number | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
 
@@ -148,7 +148,7 @@ export default function AddListingPage({ language }: Props) {
       return;
     }
 
-    setPublishedListingId(typeof data?.id === "string" ? data.id : null);
+    setPublishedListingId(typeof data?.id === "number" ? data.id : null);
     setMessage(t.success);
   }
 

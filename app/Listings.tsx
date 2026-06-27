@@ -242,8 +242,8 @@ function isNewListing(createdAt: string | null) {
     return false;
   }
 
-  const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
-  return Date.now() - createdTime <= sevenDaysInMs;
+  const fortyEightHoursInMs = 48 * 60 * 60 * 1000;
+  return Date.now() - createdTime <= fortyEightHoursInMs;
 }
 
 function formatSkeins(

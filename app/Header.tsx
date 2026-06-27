@@ -112,7 +112,7 @@ export default function Header({ language }: Props) {
           </a>
 
           <a
-            href="/account"
+            href="/account?section=favorites"
             className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"
           >
             <Heart size={21} />
@@ -190,7 +190,7 @@ export default function Header({ language }: Props) {
               {t.about}
             </a>
             <a
-              href="/account"
+              href="/account?section=favorites"
               onClick={() => setIsMenuOpen(false)}
               className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
             >

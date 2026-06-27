@@ -8,6 +8,8 @@ import {
   CalendarDays,
   CheckCircle2,
   Eye,
+  Heart,
+  LogOut,
   Loader2,
   Package,
   Pencil,
@@ -30,14 +32,24 @@ type Listing = {
   status: string | null;
 };
 
+type FavoriteRow = {
+  listing_id: number | string | null;
+};
+
+type AccountSection = "listings" | "favorites";
+
 export default function AccountPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState<AccountSection>("listings");
   const [listings, setListings] = useState<Listing[]>([]);
+  const [favoriteListings, setFavoriteListings] = useState<Listing[]>([]);
   const [isListingsLoading, setIsListingsLoading] = useState(false);
+  const [isFavoritesLoading, setIsFavoritesLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
+  const [removingFavoriteId, setRemovingFavoriteId] = useState<number | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
@@ -63,7 +75,58 @@ export default function AccountPage() {
     setListings(data ?? []);
   }, []);
 
+  const loadFavorites = useCallback(async (userId: string) => {
+    setIsFavoritesLoading(true);
+    setErrorMessage("");
+
+    const { data: favoriteRows, error: favoritesError } = await supabase
+      .from("favorites")
+      .select("listing_id")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .returns<FavoriteRow[]>();
+
+    if (favoritesError) {
+      setIsFavoritesLoading(false);
+      setErrorMessage(favoritesError.message || "Nie udało się pobrać ulubionych.");
+      return;
+    }
+
+    const favoriteIds = (favoriteRows ?? [])
+      .map((favorite) => favorite.listing_id)
+      .filter((listingId): listingId is number | string => listingId !== null)
+      .map((listingId) => String(listingId));
+
+    if (favoriteIds.length === 0) {
+      setFavoriteListings([]);
+      setIsFavoritesLoading(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("listings")
+      .select("id, created_at, brand, yarn_name, color, dyelot, skeins, country, status")
+      .in("id", favoriteIds)
+      .returns<Listing[]>();
+
+    setIsFavoritesLoading(false);
+
+    if (error) {
+      setErrorMessage(error.message || "Nie udało się pobrać ulubionych ogłoszeń.");
+      return;
+    }
+
+    const listingsById = new Map((data ?? []).map((listing) => [String(listing.id), listing]));
+    setFavoriteListings(
+      favoriteIds
+        .map((listingId) => listingsById.get(listingId))
+        .filter((listing): listing is Listing => Boolean(listing)),
+    );
+  }, []);
+
   useEffect(() => {
+    setActiveSection(getInitialAccountSection());
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setDisplayName(getSessionDisplayName(session));
@@ -71,6 +134,7 @@ export default function AccountPage() {
 
       if (session?.user) {
         void loadListings(session.user.id);
+        void loadFavorites(session.user.id);
       }
     });
 
@@ -82,13 +146,15 @@ export default function AccountPage() {
 
       if (session?.user) {
         void loadListings(session.user.id);
+        void loadFavorites(session.user.id);
       } else {
         setListings([]);
+        setFavoriteListings([]);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [loadListings]);
+  }, [loadFavorites, loadListings]);
 
   async function handleLogin() {
     await supabase.auth.signInWithOAuth({
@@ -97,6 +163,29 @@ export default function AccountPage() {
         redirectTo: getAuthCallbackRedirectTo(),
       },
     });
+  }
+
+  function handleSectionChange(section: AccountSection) {
+    setActiveSection(section);
+
+    if (typeof window !== "undefined") {
+      const url = section === "favorites" ? "/account?section=favorites" : "/account";
+      window.history.replaceState(null, "", url);
+    }
+  }
+
+  async function handleLogout() {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      setErrorMessage(error.message || "Nie udało się wylogować.");
+      return;
+    }
+
+    setSession(null);
+    setListings([]);
+    setFavoriteListings([]);
+    window.location.href = "/";
   }
 
   async function handleSaveDisplayName(event: FormEvent<HTMLFormElement>) {
@@ -157,6 +246,33 @@ export default function AccountPage() {
     }
 
     await loadListings(session.user.id);
+    await loadFavorites(session.user.id);
+  }
+
+  async function handleRemoveFavorite(listingId: number) {
+    if (!session?.user) {
+      return;
+    }
+
+    setRemovingFavoriteId(listingId);
+    setErrorMessage("");
+
+    const { error } = await supabase
+      .from("favorites")
+      .delete()
+      .eq("user_id", session.user.id)
+      .eq("listing_id", String(listingId));
+
+    setRemovingFavoriteId(null);
+
+    if (error) {
+      setErrorMessage(error.message || "Nie udało się usunąć ogłoszenia z ulubionych.");
+      return;
+    }
+
+    setFavoriteListings((currentListings) =>
+      currentListings.filter((listing) => listing.id !== listingId),
+    );
   }
 
   async function handleMarkAsSold(listingId: number) {
@@ -189,7 +305,10 @@ export default function AccountPage() {
     }
 
     await loadListings(session.user.id);
+    await loadFavorites(session.user.id);
   }
+
+  const isFavoritesSection = activeSection === "favorites";
 
   if (isAuthLoading) {
     return (
@@ -277,14 +396,27 @@ export default function AccountPage() {
               <p className="mt-2 text-sm text-[#6E6582]">{profileMessage}</p>
             ) : null}
           </form>
+
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#6C5A86] transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
+          >
+            <LogOut size={17} />
+            Wyloguj się
+          </button>
         </div>
 
         <div className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-4 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold">Moje ogłoszenia</h2>
+              <h2 className="text-2xl font-bold">
+                {isFavoritesSection ? "Ulubione" : "Moje ogłoszenia"}
+              </h2>
               <p className="mt-1 text-sm text-[#6E6582]">
-                Widzisz tylko ogłoszenia przypisane do Twojego konta.
+                {isFavoritesSection
+                  ? "Ogłoszenia zapisane przez Ciebie na później."
+                  : "Widzisz tylko ogłoszenia przypisane do Twojego konta."}
               </p>
             </div>
             <Link
@@ -295,13 +427,125 @@ export default function AccountPage() {
             </Link>
           </div>
 
+          <div className="mt-5 grid gap-2 rounded-2xl bg-[#FAF8FC] p-1 sm:inline-grid sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => handleSectionChange("listings")}
+              className={`min-h-11 rounded-xl px-4 text-sm font-semibold transition ${
+                activeSection === "listings"
+                  ? "bg-white text-[#7438B7] shadow-sm"
+                  : "text-[#6E6582] hover:bg-white/70 hover:text-[#7438B7]"
+              }`}
+            >
+              Moje ogłoszenia
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSectionChange("favorites")}
+              className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition ${
+                activeSection === "favorites"
+                  ? "bg-white text-[#7438B7] shadow-sm"
+                  : "text-[#6E6582] hover:bg-white/70 hover:text-[#7438B7]"
+              }`}
+            >
+              <Heart size={17} />
+              Ulubione
+            </button>
+          </div>
+
           {errorMessage ? (
             <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               {errorMessage}
             </div>
           ) : null}
 
-          {isListingsLoading ? (
+          {isFavoritesSection ? (
+            isFavoritesLoading ? (
+              <div className="mt-6 flex items-center gap-3 rounded-2xl bg-[#FAF8FC] p-5 text-sm text-[#6E6582]">
+                <Loader2 className="animate-spin text-[#7438B7]" size={20} />
+                Ładowanie ulubionych...
+              </div>
+            ) : favoriteListings.length === 0 ? (
+              <div className="mt-6 rounded-2xl bg-[#FAF8FC] p-8 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#7438B7] shadow-sm">
+                  <Heart size={24} />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold">
+                  Nie masz jeszcze ulubionych ogłoszeń.
+                </h3>
+                <p className="mt-2 text-sm text-[#6E6582]">
+                  Zapisane ogłoszenia pojawią się tutaj po kliknięciu serduszka.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4">
+                {favoriteListings.map((listing) => (
+                  <article
+                    key={listing.id}
+                    className="rounded-2xl border border-[#E8E1F0] bg-[#FFFEFF] p-4 shadow-[0_10px_28px_rgba(51,36,82,0.06)] sm:p-5"
+                  >
+                    <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-xl font-bold text-[#17142E]">
+                            {listing.brand ?? "-"}
+                          </h3>
+                          {listing.status ? (
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(listing.status)}`}
+                            >
+                              {getStatusLabel(listing.status)}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-sm font-semibold text-[#332B4D]">
+                          {listing.yarn_name ?? "-"}
+                        </p>
+
+                        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                          <AccountFact label="Kolor" value={listing.color} />
+                          <AccountFact label="Dye lot" value={listing.dyelot} />
+                          <AccountFact
+                            label="Motki"
+                            value={listing.skeins === null ? null : String(listing.skeins)}
+                          />
+                          <AccountFact label="Lokalizacja" value={listing.country} />
+                        </dl>
+
+                        <div className="mt-4 flex items-center gap-2 text-xs font-medium text-[#6E6582]">
+                          <CalendarDays size={15} className="text-[#7438B7]" />
+                          Dodane {formatDate(listing.created_at)}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-2 sm:flex lg:justify-end">
+                        <Link
+                          href={`/listing/${listing.id}?from=account`}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]"
+                        >
+                          <Eye size={17} />
+                          Zobacz
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => void handleRemoveFavorite(listing.id)}
+                          disabled={removingFavoriteId === listing.id}
+                          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {removingFavoriteId === listing.id ? (
+                            <Loader2 className="animate-spin" size={17} />
+                          ) : (
+                            <Heart size={17} />
+                          )}
+                          Usuń z ulubionych
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )
+          ) : isListingsLoading ? (
             <div className="mt-6 flex items-center gap-3 rounded-2xl bg-[#FAF8FC] p-5 text-sm text-[#6E6582]">
               <Loader2 className="animate-spin text-[#7438B7]" size={20} />
               Ładowanie ogłoszeń...
@@ -476,6 +720,16 @@ function getSessionDisplayName(session: Session | null) {
     "";
 
   return typeof value === "string" ? value : "";
+}
+
+function getInitialAccountSection(): AccountSection {
+  if (typeof window === "undefined") {
+    return "listings";
+  }
+
+  return new URLSearchParams(window.location.search).get("section") === "favorites"
+    ? "favorites"
+    : "listings";
 }
 
 function formatDate(value: string | null) {
