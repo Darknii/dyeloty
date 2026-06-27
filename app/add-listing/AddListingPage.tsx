@@ -12,6 +12,9 @@ type Props = {
   language: "en" | "pl";
 };
 
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 export default function AddListingPage({ language }: Props) {
   const [session, setSession] = useState<Session | null>(null);
   const [brand, setBrand] = useState("");
@@ -23,6 +26,9 @@ export default function AddListingPage({ language }: Props) {
   const [listingUrl, setListingUrl] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [publishedListingId, setPublishedListingId] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -39,6 +45,20 @@ export default function AddListingPage({ language }: Props) {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(imageFile);
+    setImagePreviewUrl(previewUrl);
+
+    return () => {
+      URL.revokeObjectURL(previewUrl);
+    };
+  }, [imageFile]);
 
   async function handleLogin() {
     await supabase.auth.signInWithOAuth({
@@ -96,18 +116,30 @@ export default function AddListingPage({ language }: Props) {
 
     setIsSubmitting(true);
 
-    const { error } = await supabase.from("listings").insert({
-      brand: brand.trim(),
-      yarn_name: yarnName.trim(),
-      color: color.trim(),
-      dyelot: dyelot.trim(),
-      skeins: skeinsCount,
-      country: country.trim(),
-      contact: parsedUrl.toString(),
-      status: "active",
-      type,
-      user_id: session.user.id,
-    });
+    const imageUrl = await uploadListingImage(session.user.id);
+
+    if (imageUrl === false) {
+      setIsSubmitting(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("listings")
+      .insert({
+        brand: brand.trim(),
+        yarn_name: yarnName.trim(),
+        color: color.trim(),
+        dyelot: dyelot.trim(),
+        skeins: skeinsCount,
+        country: country.trim(),
+        contact: parsedUrl.toString(),
+        status: "active",
+        type,
+        user_id: session.user.id,
+        image_url: imageUrl,
+      })
+      .select("id")
+      .single();
 
     setIsSubmitting(false);
 
@@ -116,6 +148,61 @@ export default function AddListingPage({ language }: Props) {
       return;
     }
 
+    setPublishedListingId(typeof data?.id === "string" ? data.id : null);
+    setMessage(t.success);
+  }
+
+  async function uploadListingImage(userId: string) {
+    if (!imageFile) {
+      return null;
+    }
+
+    const filePath = `listings/${userId}/${Date.now()}-${sanitizeFileName(imageFile.name)}`;
+
+    const { error } = await supabase.storage
+      .from("listing-images")
+      .upload(filePath, imageFile, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: imageFile.type,
+      });
+
+    if (error) {
+      setMessage(error.message || t.imageUploadError);
+      return false;
+    }
+
+    const { data } = supabase.storage
+      .from("listing-images")
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  }
+
+  function handleImageChange(file: File | null) {
+    setMessage("");
+
+    if (!file) {
+      setImageFile(null);
+      return;
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setImageFile(null);
+      setMessage(t.imageTypeError);
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setImageFile(null);
+      setMessage(t.imageSizeError);
+      return;
+    }
+
+    setImageFile(file);
+  }
+
+  function handleAddAnother() {
     setBrand("");
     setYarnName("");
     setColor("");
@@ -123,7 +210,9 @@ export default function AddListingPage({ language }: Props) {
     setSkeins("");
     setCountry("");
     setListingUrl("");
-    setMessage(t.success);
+    setImageFile(null);
+    setMessage("");
+    setPublishedListingId(null);
   }
 
   const t =
@@ -148,14 +237,23 @@ export default function AddListingPage({ language }: Props) {
             "https://www.vinted.pl/... albo https://www.olx.pl/...",
           listingUrlHelp:
             "Wklej link do miejsca, gdzie kupująca może dokończyć zakup.",
+          image: "Zdjęcie włóczki / etykiety / numeru partii",
+          imageHelp:
+            "Możesz dodać zdjęcie włóczki, etykiety albo numeru partii. Jeśli masz już zdjęcie z Vinted lub OLX, możesz wrzucić je tutaj ponownie.",
+          imageTypeError: "Dodaj plik w formacie JPG, PNG albo WebP.",
+          imageSizeError: "Zdjęcie może mieć maksymalnie 5 MB.",
+          imageUploadError: "Nie udało się przesłać zdjęcia. Spróbuj ponownie.",
           publish: "Opublikuj ogłoszenie",
           publishing: "Publikowanie...",
           requiredError: "Uzupełnij wszystkie pola formularza.",
           skeinsError: "Liczba motków musi być większa od zera.",
           urlError: "Podaj poprawny link do ogłoszenia.",
           authError: "Musisz być zalogowana lub zalogowany.",
-          success: "Ogłoszenie zostało dodane.",
+          success: "Ogłoszenie zostało opublikowane.",
           genericError: "Nie udało się dodać ogłoszenia. Spróbuj ponownie.",
+          addAnother: "Dodaj kolejne ogłoszenie",
+          goToAccount: "Przejdź do mojego konta",
+          viewListing: "Zobacz ogłoszenie",
         }
       : {
           back: "Back to homepage",
@@ -177,14 +275,23 @@ export default function AddListingPage({ language }: Props) {
             "https://www.vinted.pl/... or https://www.olx.pl/...",
           listingUrlHelp:
             "Paste the link where the buyer can complete the purchase.",
+          image: "Yarn / label / dye lot photo",
+          imageHelp:
+            "You can add a photo of the yarn, label, or dye lot number. If you already have a photo from Vinted or OLX, you can upload it here again.",
+          imageTypeError: "Upload a JPG, PNG, or WebP file.",
+          imageSizeError: "The photo can be up to 5 MB.",
+          imageUploadError: "Could not upload the photo. Please try again.",
           publish: "Publish listing",
           publishing: "Publishing...",
           requiredError: "Please fill in all form fields.",
           skeinsError: "Number of skeins must be greater than zero.",
           urlError: "Please enter a valid listing link.",
           authError: "You must be signed in.",
-          success: "Your listing has been added.",
+          success: "Your listing has been published.",
           genericError: "Could not add the listing. Please try again.",
+          addAnother: "Add another listing",
+          goToAccount: "Go to my account",
+          viewListing: "View listing",
         };
 
   const homeHref = language === "pl" ? "/pl" : "/en";
@@ -223,6 +330,36 @@ export default function AddListingPage({ language }: Props) {
                 {t.loginButton}
               </button>
             </div>
+          ) : message === t.success ? (
+            <div className="mt-8 rounded-2xl bg-[#FAF8FC] p-6 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#7438B7] shadow-sm">
+                <Plus size={25} />
+              </div>
+              <h2 className="mt-4 text-xl font-bold">{t.success}</h2>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={handleAddAnother}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#7438B7] px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.24)] transition hover:bg-[#622CA2]"
+                >
+                  {t.addAnother}
+                </button>
+                <Link
+                  href="/account"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-[#7438B7] shadow-sm transition hover:bg-[#F4EEF9]"
+                >
+                  {t.goToAccount}
+                </Link>
+                {publishedListingId ? (
+                  <Link
+                    href={`/listing/${publishedListingId}`}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D8CCE7] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-white sm:col-span-2"
+                  >
+                    {t.viewListing}
+                  </Link>
+                ) : null}
+              </div>
+            </div>
           ) : (
             <form onSubmit={handleSubmit} className="mt-8 grid gap-5">
               <FormField id="brand" label={t.brand} value={brand} onChange={setBrand} />
@@ -256,6 +393,29 @@ export default function AddListingPage({ language }: Props) {
                   required
                 />
                 <p className="mt-2 text-sm text-[#6E6582]">{t.listingUrlHelp}</p>
+              </div>
+
+              <div>
+                <label htmlFor="listingImage" className="mb-2 block text-sm font-semibold text-[#514A67]">
+                  {t.image}
+                </label>
+                <input
+                  id="listingImage"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => handleImageChange(event.target.files?.[0] ?? null)}
+                  className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 py-3 text-sm text-[#17142E] outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-[#F4EEF9] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#7438B7] hover:file:bg-[#EDE2F8] focus:border-[#A875D2]"
+                />
+                <p className="mt-2 text-sm text-[#6E6582]">{t.imageHelp}</p>
+                {imagePreviewUrl ? (
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC]">
+                    <img
+                      src={imagePreviewUrl}
+                      alt=""
+                      className="h-56 w-full object-cover"
+                    />
+                  </div>
+                ) : null}
               </div>
 
               {message ? (
@@ -311,4 +471,17 @@ function FormField({
       />
     </div>
   );
+}
+
+function sanitizeFileName(fileName: string) {
+  const fallbackName = "listing-image";
+  const normalized = fileName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+
+  return normalized || fallbackName;
 }
