@@ -144,7 +144,8 @@ export default function AddListingPage({ language }: Props) {
     setIsSubmitting(false);
 
     if (error) {
-      setMessage(error.message || t.genericError);
+      console.error("Could not create listing", error);
+      setMessage(t.genericError);
       return;
     }
 
@@ -168,7 +169,8 @@ export default function AddListingPage({ language }: Props) {
       });
 
     if (error) {
-      setMessage(error.message || t.imageUploadError);
+      console.error("Could not upload listing image", error);
+      setMessage(t.imageUploadError);
       return false;
     }
 

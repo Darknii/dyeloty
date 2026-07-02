@@ -48,10 +48,13 @@ export default async function Listings({ language, filters = {} }: Props) {
     language === "pl"
       ? {
           empty: "Nie ma jeszcze ogłoszeń.",
-          emptyHint: "Pierwsze ogłoszenia pojawią się tutaj po dodaniu włóczki.",
-          searchEmpty: "Brak pasujących ogłoszeń.",
-          searchEmptyHint: "Spróbuj wpisać inną markę, kolor albo dye lot.",
+          emptyHint: "Dodaj pierwszą włóczkę i pomóż komuś znaleźć brakującą partię.",
+          searchEmpty: "Nie znaleźliśmy pasujących ogłoszeń.",
+          searchEmptyHint: "Spróbuj zmienić markę, kolor albo dye lot. Nowe ogłoszenia pojawiają się ręcznie, więc warto wrócić później.",
           errorTitle: "Nie udało się pobrać ogłoszeń",
+          errorHint: "Odśwież stronę albo spróbuj ponownie za chwilę.",
+          addListing: "Dodaj ogłoszenie",
+          browseListings: "Przejdź do ogłoszeń",
           noPhoto: "Zdjęcie niedostępne",
           newBadge: "NOWE",
           skeinOne: "motek",
@@ -66,6 +69,9 @@ export default async function Listings({ language, filters = {} }: Props) {
           searchEmpty: "No matching listings.",
           searchEmptyHint: "Try another brand, color, or dye lot.",
           errorTitle: "Could not load listings",
+          errorHint: "Refresh the page or try again in a moment.",
+          addListing: "Add listing",
+          browseListings: "Browse listings",
           noPhoto: "Photo unavailable",
           newBadge: "NEW",
           skeinOne: "skein",
@@ -115,15 +121,20 @@ export default async function Listings({ language, filters = {} }: Props) {
   const { data: listings, error } = await query.returns<Listing[]>();
 
   if (error) {
+    console.error("Could not load listings", error);
+
     return (
       <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 shadow-sm">
         <div className="font-semibold">{t.errorTitle}</div>
-        <div className="mt-2 text-sm">{error.message}</div>
+        <div className="mt-2 text-sm">{t.errorHint}</div>
       </div>
     );
   }
 
   if (!listings || listings.length === 0) {
+    const addListingHref = language === "pl" ? "/add-listing/pl" : "/add-listing/en";
+    const homeHref = language === "pl" ? "/pl#listings" : "/en#listings";
+
     return (
       <div className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-8 text-center shadow-[0_14px_40px_rgba(51,36,82,0.08)]">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F4EEF9] text-[#7A3FC5]">
@@ -135,6 +146,22 @@ export default async function Listings({ language, filters = {} }: Props) {
         <p className="mt-2 text-sm text-[#70677F]">
           {hasSearch ? t.searchEmptyHint : t.emptyHint}
         </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link
+            href={addListingHref}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#7438B7] px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.24)] transition hover:bg-[#622CA2]"
+          >
+            {t.addListing}
+          </Link>
+          {hasSearch ? (
+            <Link
+              href={homeHref}
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#F4EEF9] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#EDE2F8]"
+            >
+              {t.browseListings}
+            </Link>
+          ) : null}
+        </div>
       </div>
     );
   }

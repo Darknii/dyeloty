@@ -44,10 +44,10 @@ export default function Footer({ language }: Props) {
           </a>
 
           <a
-            href={language === "pl" ? "/pl/privacy" : "/en/privacy"}
+            href="/privacy"
             className="transition hover:text-[#7438B7]"
           >
-            {language === "pl" ? "Polityka prywatności" : "Privacy Policy"}
+            {language === "pl" ? "Prywatność" : "Privacy"}
           </a>
 
           <a

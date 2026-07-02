@@ -120,7 +120,8 @@ export default function FavoriteButton({
     setIsLoading(false);
 
     if (error) {
-      setMessage(error.message || t.error);
+      console.error("Could not toggle favorite", error);
+      setMessage(t.error);
       return;
     }
 

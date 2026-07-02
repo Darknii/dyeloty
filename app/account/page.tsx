@@ -18,6 +18,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 import { getAuthCallbackRedirectTo } from "../authRedirect";
+import { removeListingImageFromStorage } from "../listingImages";
 import {
   LISTING_STATUS_OPTIONS,
   getListingStatusClassName,
@@ -36,6 +37,7 @@ type Listing = {
   skeins: number | null;
   country: string | null;
   status: string | null;
+  image_url: string | null;
 };
 
 type FavoriteRow = {
@@ -66,7 +68,7 @@ export default function AccountPage() {
 
     const { data, error } = await supabase
       .from("listings")
-      .select("id, created_at, brand, yarn_name, color, dyelot, skeins, country, status")
+      .select("id, created_at, brand, yarn_name, color, dyelot, skeins, country, status, image_url")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .returns<Listing[]>();
@@ -74,7 +76,8 @@ export default function AccountPage() {
     setIsListingsLoading(false);
 
     if (error) {
-      setErrorMessage(error.message || "Nie udało się pobrać ogłoszeń.");
+      console.error("Could not load account listings", error);
+      setErrorMessage("Nie udało się pobrać ogłoszeń. Odśwież stronę albo spróbuj ponownie za chwilę.");
       return;
     }
 
@@ -94,7 +97,8 @@ export default function AccountPage() {
 
     if (favoritesError) {
       setIsFavoritesLoading(false);
-      setErrorMessage(favoritesError.message || "Nie udało się pobrać ulubionych.");
+      console.error("Could not load favorites", favoritesError);
+      setErrorMessage("Nie udało się pobrać ulubionych. Spróbuj ponownie za chwilę.");
       return;
     }
 
@@ -111,14 +115,15 @@ export default function AccountPage() {
 
     const { data, error } = await supabase
       .from("listings")
-      .select("id, created_at, brand, yarn_name, color, dyelot, skeins, country, status")
+      .select("id, created_at, brand, yarn_name, color, dyelot, skeins, country, status, image_url")
       .in("id", favoriteIds)
       .returns<Listing[]>();
 
     setIsFavoritesLoading(false);
 
     if (error) {
-      setErrorMessage(error.message || "Nie udało się pobrać ulubionych ogłoszeń.");
+      console.error("Could not load favorite listings", error);
+      setErrorMessage("Nie udało się pobrać ulubionych ogłoszeń. Spróbuj ponownie za chwilę.");
       return;
     }
 
@@ -184,7 +189,8 @@ export default function AccountPage() {
     const { error } = await supabase.auth.signOut();
 
     if (error) {
-      setErrorMessage(error.message || "Nie udało się wylogować.");
+      console.error("Could not sign out", error);
+      setErrorMessage("Nie udało się wylogować. Spróbuj ponownie.");
       return;
     }
 
@@ -209,7 +215,8 @@ export default function AccountPage() {
     setIsSavingName(false);
 
     if (error) {
-      setProfileMessage(error.message || "Nie udało się zapisać nazwy.");
+      console.error("Could not save display name", error);
+      setProfileMessage("Nie udało się zapisać nazwy. Spróbuj ponownie.");
       return;
     }
 
@@ -237,6 +244,7 @@ export default function AccountPage() {
 
     setDeletingId(listingId);
     setErrorMessage("");
+    const deletedListing = listings.find((listing) => listing.id === listingId);
 
     const { error } = await supabase
       .from("listings")
@@ -247,8 +255,18 @@ export default function AccountPage() {
     setDeletingId(null);
 
     if (error) {
-      setErrorMessage(error.message || "Nie udało się usunąć ogłoszenia.");
+      console.error("Could not delete listing", error);
+      setErrorMessage("Nie udało się usunąć ogłoszenia. Spróbuj ponownie.");
       return;
+    }
+
+    const cleanupError = await removeListingImageFromStorage(
+      deletedListing?.image_url,
+      session.user.id,
+    );
+
+    if (cleanupError) {
+      console.warn("Listing was deleted, but image cleanup failed", cleanupError);
     }
 
     await loadListings(session.user.id);
@@ -272,7 +290,8 @@ export default function AccountPage() {
     setRemovingFavoriteId(null);
 
     if (error) {
-      setErrorMessage(error.message || "Nie udało się usunąć ogłoszenia z ulubionych.");
+      console.error("Could not remove favorite", error);
+      setErrorMessage("Nie udało się usunąć ogłoszenia z ulubionych. Spróbuj ponownie.");
       return;
     }
 
@@ -298,7 +317,8 @@ export default function AccountPage() {
     setUpdatingStatusId(null);
 
     if (error) {
-      setErrorMessage(error.message || "Nie udało się zmienić statusu ogłoszenia.");
+      console.error("Could not update listing status", error);
+      setErrorMessage("Nie udało się zmienić statusu ogłoszenia. Spróbuj ponownie.");
       return;
     }
 
@@ -472,8 +492,14 @@ export default function AccountPage() {
                   Nie masz jeszcze ulubionych ogłoszeń.
                 </h3>
                 <p className="mt-2 text-sm text-[#6E6582]">
-                  Zapisane ogłoszenia pojawią się tutaj po kliknięciu serduszka.
+                  Gdy zapiszesz ogłoszenie serduszkiem, wrócisz do niego tutaj bez szukania od nowa.
                 </p>
+                <Link
+                  href="/#listings"
+                  className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#7438B7] px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.24)] transition hover:bg-[#622CA2]"
+                >
+                  Przejdź do ogłoszeń
+                </Link>
               </div>
             ) : (
               <div className="mt-6 grid gap-4">
@@ -555,7 +581,7 @@ export default function AccountPage() {
               </div>
               <h3 className="mt-4 text-lg font-semibold">Nie masz jeszcze ogłoszeń.</h3>
               <p className="mt-2 text-sm text-[#6E6582]">
-                Po dodaniu włóczki pojawi się tutaj.
+                Dodaj pierwszą włóczkę, żeby inni mogli znaleźć pasującą partię.
               </p>
               <Link
                 href="/add-listing/pl"

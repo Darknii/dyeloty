@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../supabase";
+import { removeListingImageFromStorage } from "../../listingImages";
 import {
   LISTING_STATUS_OPTIONS,
   normalizeListingStatus,
@@ -89,6 +90,9 @@ export default function EditListingPage({ params }: Props) {
       setIsListingLoading(false);
 
       if (error || !data) {
+        if (error) {
+          console.error("Could not load listing for edit", error);
+        }
         setMessage("Nie znaleziono ogłoszenia albo nie masz uprawnień do edycji.");
         return;
       }
@@ -165,6 +169,7 @@ export default function EditListingPage({ params }: Props) {
     const type = hostname.includes("olx") ? "olx" : "vinted";
 
     setIsSubmitting(true);
+    const previousImageUrl = currentImageUrl;
 
     const uploadedImageUrl = await uploadListingImage(session.user.id);
 
@@ -193,13 +198,23 @@ export default function EditListingPage({ params }: Props) {
     setIsSubmitting(false);
 
     if (error) {
-      setMessage(error.message || "Nie udało się zapisać zmian.");
+      console.error("Could not update listing", error);
+      setMessage("Nie udało się zapisać zmian. Spróbuj ponownie.");
       return;
     }
 
     if (uploadedImageUrl) {
       setCurrentImageUrl(uploadedImageUrl);
       setImageFile(null);
+
+      const cleanupError = await removeListingImageFromStorage(
+        previousImageUrl,
+        session.user.id,
+      );
+
+      if (cleanupError) {
+        console.warn("Listing was updated, but old image cleanup failed", cleanupError);
+      }
     }
 
     setSavedListingId(id);
@@ -222,7 +237,8 @@ export default function EditListingPage({ params }: Props) {
       });
 
     if (error) {
-      setMessage(error.message || "Nie udało się przesłać zdjęcia. Spróbuj ponownie.");
+      console.error("Could not upload listing image", error);
+      setMessage("Nie udało się przesłać zdjęcia. Spróbuj ponownie.");
       return false;
     }
 
