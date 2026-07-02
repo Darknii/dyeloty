@@ -1,8 +1,5 @@
 import {
-  Hash,
   Heart,
-  MapPin,
-  Palette,
   Search,
   ShieldCheck,
   Spool,
@@ -25,6 +22,7 @@ export type ListingFilters = {
   color?: string | string[];
   dyelot?: string | string[];
   location?: string | string[];
+  status?: string | string[];
 };
 
 export default function HomePage({ language, filters = {} }: Props) {
@@ -40,17 +38,13 @@ export default function HomePage({ language, filters = {} }: Props) {
             "Dyeloty pomaga dziewiarkom znaleźć włóczki z tej samej partii farbowania.",
           descriptionTwo: "Szybko. Wygodnie. Z miłości do dziergania.",
           heroPhoto: "Miejsce na zdjęcie włóczek",
-          brand: "Marka",
-          brandPlaceholder: "np. Drops Air",
-          color: "Kolor",
-          colorPlaceholder: "np. beżowy",
-          dyelot: "Dye lot / Partia",
-          dyelotPlaceholder: "np. 1234",
-          location: "Lokalizacja",
-          locationPlaceholder: "Cała Polska",
+          heroSearch: "Szukaj",
+          heroSearchPlaceholder:
+            "Szukaj po marce, nazwie włóczki, kolorze lub dye lot…",
           search: "Szukaj",
           popular: "Popularne wyszukiwania:",
           recent: "Najnowsze ogłoszenia",
+          searchResults: "Wyniki wyszukiwania",
           seeAll: "Zobacz wszystkie",
           statsListings: "Ogłoszeń włóczek",
           statsListingsSub: "z różnych marek",
@@ -88,17 +82,12 @@ export default function HomePage({ language, filters = {} }: Props) {
             "Dyeloty is a place for makers looking for yarn from the same dye lot.",
           descriptionTwo: "Fast. Simple. Made with love for knitting.",
           heroPhoto: "Yarn photo area",
-          brand: "Brand",
-          brandPlaceholder: "e.g. Drops Air",
-          color: "Color",
-          colorPlaceholder: "e.g. beige",
-          dyelot: "Dye lot",
-          dyelotPlaceholder: "e.g. 1234",
-          location: "Location",
-          locationPlaceholder: "All Poland",
+          heroSearch: "Search",
+          heroSearchPlaceholder: "Search by brand, yarn name, color, or dye lot…",
           search: "Search",
           popular: "Popular searches:",
           recent: "Newest listings",
+          searchResults: "Search results",
           seeAll: "See all",
           statsListings: "Yarn listings",
           statsListingsSub: "from many brands",
@@ -128,8 +117,16 @@ export default function HomePage({ language, filters = {} }: Props) {
         };
 
   const chips = ["Drops Air", "Alize Puffy", "Merino Extra Fine", "Baby Merino", "Kokonki"];
-  const homeHref = language === "pl" ? "/pl" : "/en";
+  const homeHref = language === "pl" ? "/" : "/en";
   const normalizedFilters = normalizeFilters(filters);
+  const hasActiveSearch = Boolean(
+    normalizedFilters.q ||
+      normalizedFilters.brand ||
+      normalizedFilters.color ||
+      normalizedFilters.dyelot ||
+      normalizedFilters.location ||
+      normalizedFilters.status,
+  );
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#F7F4FB] text-[#17142E]">
@@ -162,37 +159,16 @@ export default function HomePage({ language, filters = {} }: Props) {
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
         <section className="relative z-20 -mt-1 sm:-mt-4 lg:-mt-24">
           <form
-            action={homeHref}
+            action={`${homeHref}#listings`}
             className="rounded-2xl border border-[#E6DDEC] bg-white p-4 shadow-[0_18px_55px_rgba(51,36,82,0.11)] sm:p-6"
           >
-            <div className="grid gap-3 lg:grid-cols-[1.2fr_1fr_1fr_0.95fr_auto] lg:items-end">
+            <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
               <SearchField
-                label={t.brand}
-                placeholder={t.brandPlaceholder}
+                label={t.heroSearch}
+                placeholder={t.heroSearchPlaceholder}
                 icon={<Search size={17} />}
-                name="brand"
-                defaultValue={normalizedFilters.brand}
-              />
-              <SearchField
-                label={t.color}
-                placeholder={t.colorPlaceholder}
-                icon={<Palette size={17} />}
-                name="color"
-                defaultValue={normalizedFilters.color}
-              />
-              <SearchField
-                label={t.dyelot}
-                placeholder={t.dyelotPlaceholder}
-                icon={<Hash size={17} />}
-                name="dyelot"
-                defaultValue={normalizedFilters.dyelot}
-              />
-              <SearchField
-                label={t.location}
-                placeholder={t.locationPlaceholder}
-                icon={<MapPin size={17} />}
-                name="location"
-                defaultValue={normalizedFilters.location}
+                name="q"
+                defaultValue={normalizedFilters.q}
               />
 
               <button
@@ -283,10 +259,10 @@ export default function HomePage({ language, filters = {} }: Props) {
         <section id="listings" className="pb-14 pt-9 sm:pb-20 sm:pt-11">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-2xl font-bold tracking-normal text-[#17142E]">
-              {t.recent}
+              {hasActiveSearch ? t.searchResults : t.recent}
             </h2>
             <a
-              href="#listings"
+              href={`${homeHref}#listings`}
               className="hidden min-h-11 items-center gap-2 text-sm font-bold text-[#7438B7] sm:inline-flex"
             >
               {t.seeAll}
@@ -312,6 +288,7 @@ function normalizeFilters(filters: ListingFilters) {
     color: getFirstParam(filters.color),
     dyelot: getFirstParam(filters.dyelot),
     location: getFirstParam(filters.location),
+    status: getFirstParam(filters.status),
   };
 }
 

@@ -61,9 +61,9 @@ export default function Header({ language }: Props) {
           account: "Account",
         };
 
-  const homeHref = language === "pl" ? "/pl" : "/en";
+  const homeHref = language === "pl" ? "/" : "/en";
   const addHref = language === "pl" ? "/add-listing/pl" : "/add-listing/en";
-  const aboutHref = language === "pl" ? "/pl/about" : "/en/about";
+  const aboutHref = language === "pl" ? "/about" : "/en/about";
   const listingsHref = `${homeHref}#listings`;
   const howItWorksHref = `${homeHref}#how-it-works`;
   const supportHref = "https://buymeacoffee.com/dyelotyapp";
@@ -111,7 +111,7 @@ export default function Header({ language }: Props) {
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           <a
-            href={language === "pl" ? "/en" : "/pl"}
+            href={language === "pl" ? "/en" : "/"}
             className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#332B4D] transition hover:bg-[#F6F0FB] md:inline-flex"
             title={language === "pl" ? "English" : "Polski"}
           >
@@ -230,7 +230,7 @@ export default function Header({ language }: Props) {
               </button>
             )}
             <a
-              href={language === "pl" ? "/en" : "/pl"}
+              href={language === "pl" ? "/en" : "/"}
               onClick={() => setIsMenuOpen(false)}
               className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
             >
