@@ -30,14 +30,14 @@ export default function Footer({ language }: Props) {
           </a>
 
           <a
-            href={language === "pl" ? "/#how-it-works" : "/en/faq"}
+            href={language === "pl" ? "/faq" : "/en/faq"}
             className="transition hover:text-[#7438B7]"
           >
             FAQ
           </a>
 
           <a
-            href={language === "pl" ? "mailto:kontakt@dyeloty.pl" : "/en/contact"}
+            href={language === "pl" ? "/contact" : "/en/contact"}
             className="transition hover:text-[#7438B7]"
           >
             {language === "pl" ? "Kontakt" : "Contact"}
