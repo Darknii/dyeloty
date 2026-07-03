@@ -2,8 +2,9 @@ import { BadgeCheck, Hash, Package, Search, Tags } from "lucide-react";
 import Image from "next/image";
 import { Suspense, type ReactNode } from "react";
 import Header from "./Header";
-import Listings, { getHomepageListings, ListingsLoading } from "./Listings";
+import Listings, { ListingsLoading } from "./Listings";
 import Footer from "./Footer";
+import { getHomepageListings } from "./listingQueries";
 import type { ListingSearchItem } from "./ListingSearchResults";
 
 type Props = {

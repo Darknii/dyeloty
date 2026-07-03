@@ -1,8 +1,7 @@
-import { supabase } from "./supabase";
 import { ImageIcon } from "lucide-react";
 import Link from "next/link";
-import { connection } from "next/server";
 import ListingSearchResults, { type ListingSearchItem } from "./ListingSearchResults";
+import { getHomepageListings } from "./listingQueries";
 
 type Props = {
   language: "en" | "pl";
@@ -14,58 +13,41 @@ type Props = {
     location?: string;
     status?: string;
   };
+  initialListings?: ListingSearchItem[];
+  initialLoadError?: boolean;
 };
 
-export default async function Listings({ language, filters = {} }: Props) {
+export default async function Listings({
+  language,
+  filters = {},
+  initialListings,
+  initialLoadError = false,
+}: Props) {
   const t =
     language === "pl"
       ? {
-          empty: "Nie ma jeszcze ogłoszeń.",
-          emptyHint: "Dodaj pierwszą włóczkę i pomóż komuś znaleźć brakującą partię.",
-          searchEmpty: "Nie znaleźliśmy pasujących ogłoszeń.",
-          searchEmptyHint: "Spróbuj zmienić markę, kolor albo dye lot. Nowe ogłoszenia pojawiają się ręcznie, więc warto wrócić później.",
+          empty: "Tu pojawią się pierwsze ogłoszenia",
+          emptyHint:
+            "Dyeloty są w pierwszej wersji. Ogłoszenia będą dodawane przez użytkowniczki, które chcą udostępnić własne motki i konkretne partie włóczek.",
           errorTitle: "Nie udało się pobrać ogłoszeń",
           errorHint: "Odśwież stronę albo spróbuj ponownie za chwilę.",
-          addListing: "Dodaj ogłoszenie",
-          browseListings: "Przejdź do ogłoszeń",
-          noPhoto: "Zdjęcie niedostępne",
-          newBadge: "NOWE",
-          skeinOne: "motek",
-          skeinFew: "motki",
-          skeinMany: "motków",
-          weight: "150 m / 50 g",
-          lot: "Partia",
+          addListing: "Dodaj pierwsze ogłoszenie",
         }
       : {
-          empty: "No listings yet.",
-          emptyHint: "The first listings will appear here after yarn is added.",
-          searchEmpty: "No matching listings.",
-          searchEmptyHint: "Try another brand, color, or dye lot.",
+          empty: "The first listings will appear here",
+          emptyHint:
+            "Dyeloty is in its first version. Listings will be added by users who want to share their own skeins and specific yarn dye lots.",
           errorTitle: "Could not load listings",
           errorHint: "Refresh the page or try again in a moment.",
-          addListing: "Add listing",
-          browseListings: "Browse listings",
-          noPhoto: "Photo unavailable",
-          newBadge: "NEW",
-          skeinOne: "skein",
-          skeinFew: "skeins",
-          skeinMany: "skeins",
-          weight: "150 m / 50 g",
-          lot: "Lot",
+          addListing: "Add the first listing",
         };
 
-  await connection();
+  const loadResult =
+    initialListings === undefined
+      ? await getHomepageListings()
+      : { listings: initialListings, error: initialLoadError };
 
-  const query = supabase
-    .from("listings")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const { data: listings, error } = await query.returns<ListingSearchItem[]>();
-
-  if (error) {
-    console.error("Could not load listings", error);
-
+  if (loadResult.error) {
     return (
       <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700 shadow-sm">
         <div className="font-semibold">{t.errorTitle}</div>
@@ -74,7 +56,9 @@ export default async function Listings({ language, filters = {} }: Props) {
     );
   }
 
-  if (!listings || listings.length === 0) {
+  const listings = loadResult.listings;
+
+  if (listings.length === 0) {
     const addListingHref = language === "pl" ? "/add-listing/pl" : "/add-listing/en";
 
     return (
@@ -85,7 +69,7 @@ export default async function Listings({ language, filters = {} }: Props) {
         <h3 className="mt-4 text-lg font-semibold text-[#17142E]">
           {t.empty}
         </h3>
-        <p className="mt-2 text-sm text-[#70677F]">
+        <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-[#70677F]">
           {t.emptyHint}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
