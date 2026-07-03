@@ -16,7 +16,7 @@ export default function Footer({ language }: Props) {
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-10 text-[#70677F]">
           <a
-            href={language === "pl" ? "/pl/about" : "/en/about"}
+            href={language === "pl" ? "/about" : "/en/about"}
             className="transition hover:text-[#7438B7]"
           >
             {language === "pl" ? "O projekcie" : "About"}
@@ -30,14 +30,14 @@ export default function Footer({ language }: Props) {
           </a>
 
           <a
-            href={language === "pl" ? "/pl/faq" : "/en/faq"}
+            href={language === "pl" ? "/#how-it-works" : "/en/faq"}
             className="transition hover:text-[#7438B7]"
           >
             FAQ
           </a>
 
           <a
-            href={language === "pl" ? "/pl/contact" : "/en/contact"}
+            href={language === "pl" ? "mailto:kontakt@dyeloty.pl" : "/en/contact"}
             className="transition hover:text-[#7438B7]"
           >
             {language === "pl" ? "Kontakt" : "Contact"}

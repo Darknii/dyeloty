@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Plus, UserRound } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
@@ -28,7 +29,10 @@ export default function AddListingPage({ language }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [publishedListingId, setPublishedListingId] = useState<number | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const imagePreviewUrl = useMemo(
+    () => (imageFile ? URL.createObjectURL(imageFile) : ""),
+    [imageFile],
+  );
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -47,18 +51,12 @@ export default function AddListingPage({ language }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!imageFile) {
-      setImagePreviewUrl("");
-      return;
-    }
-
-    const previewUrl = URL.createObjectURL(imageFile);
-    setImagePreviewUrl(previewUrl);
-
     return () => {
-      URL.revokeObjectURL(previewUrl);
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
     };
-  }, [imageFile]);
+  }, [imagePreviewUrl]);
 
   async function handleLogin() {
     await supabase.auth.signInWithOAuth({
@@ -318,7 +316,7 @@ export default function AddListingPage({ language }: Props) {
           viewListing: "View listing",
         };
 
-  const homeHref = language === "pl" ? "/pl" : "/en";
+  const homeHref = language === "pl" ? "/" : "/en";
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#FBF9FF_0%,#F7F4FB_48%,#F4EFF8_100%)] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
@@ -449,11 +447,13 @@ export default function AddListingPage({ language }: Props) {
                 />
                 <p className="mt-2 text-sm text-[#6E6582]">{t.imageHelp}</p>
                 {imagePreviewUrl ? (
-                  <div className="mt-4 overflow-hidden rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC]">
-                    <img
+                  <div className="relative mt-4 h-56 overflow-hidden rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC]">
+                    <Image
                       src={imagePreviewUrl}
                       alt=""
-                      className="h-56 w-full object-cover"
+                      fill
+                      unoptimized
+                      className="object-cover"
                     />
                   </div>
                 ) : null}

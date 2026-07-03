@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
@@ -54,7 +55,10 @@ export default function EditListingPage({ params }: Props) {
   const [status, setStatus] = useState<ListingStatus>("available");
   const [currentImageUrl, setCurrentImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const imagePreviewUrl = useMemo(
+    () => (imageFile ? URL.createObjectURL(imageFile) : ""),
+    [imageFile],
+  );
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -112,16 +116,12 @@ export default function EditListingPage({ params }: Props) {
   }, [id, session?.user]);
 
   useEffect(() => {
-    if (!imageFile) {
-      setImagePreviewUrl("");
-      return;
-    }
-
-    const previewUrl = URL.createObjectURL(imageFile);
-    setImagePreviewUrl(previewUrl);
-
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [imageFile]);
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -417,11 +417,13 @@ export default function EditListingPage({ params }: Props) {
               Jeśli nie dodasz nowego zdjęcia, obecne zdjęcie zostanie bez zmian.
             </p>
             {imagePreviewUrl || currentImageUrl ? (
-              <div className="mt-4 overflow-hidden rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC]">
-                <img
+              <div className="relative mt-4 h-56 overflow-hidden rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC]">
+                <Image
                   src={imagePreviewUrl || currentImageUrl}
                   alt=""
-                  className="h-56 w-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
               </div>
             ) : null}

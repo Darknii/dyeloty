@@ -49,7 +49,9 @@ type AccountSection = "listings" | "favorites";
 export default function AccountPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<AccountSection>("listings");
+  const [activeSection, setActiveSection] = useState<AccountSection>(() =>
+    getInitialAccountSection(),
+  );
   const [listings, setListings] = useState<Listing[]>([]);
   const [favoriteListings, setFavoriteListings] = useState<Listing[]>([]);
   const [isListingsLoading, setIsListingsLoading] = useState(false);
@@ -136,8 +138,6 @@ export default function AccountPage() {
   }, []);
 
   useEffect(() => {
-    setActiveSection(getInitialAccountSection());
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setDisplayName(getSessionDisplayName(session));

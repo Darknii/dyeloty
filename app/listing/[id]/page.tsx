@@ -11,6 +11,7 @@ import {
   Tag,
 } from "lucide-react";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { supabase } from "../../supabase";
 import FavoriteButton from "../../FavoriteButton";
@@ -69,13 +70,13 @@ export default async function ListingDetailsPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-[#F8F6FB] text-[#1F1830]">
       <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:py-12">
-        <a
+        <Link
           href="/"
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#6C5A86] transition hover:text-[#6F36B9]"
         >
           <ArrowLeft size={17} />
           Wróć do ogłoszeń
-        </a>
+        </Link>
 
         <div className="mt-7 grid overflow-hidden rounded-2xl border border-[#E8E1F0] bg-white shadow-[0_18px_55px_rgba(51,36,82,0.10)] lg:grid-cols-[0.42fr_0.58fr]">
           <section className="order-2 border-[#E8E1F0] p-5 sm:p-6 lg:order-1 lg:border-r">

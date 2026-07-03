@@ -42,7 +42,7 @@ export default function About({ language }: Props) {
         back: "Back to listings",
       };
 
-  const homeHref = isPolish ? "/pl" : "/en";
+  const homeHref = isPolish ? "/" : "/en";
   const supportHref = "https://buymeacoffee.com/dyelotyapp";
 
   return (
