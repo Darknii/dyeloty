@@ -51,7 +51,7 @@ export default function Footer({ language }: Props) {
           </a>
 
           <a
-            href="https://buymeacoffee.com/dyelotyapp"
+            href="https://suppi.pl/dyeloty"
             target="_blank"
             rel="noopener noreferrer"
             className="transition hover:text-[#7438B7]"

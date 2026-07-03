@@ -43,7 +43,7 @@ export default function About({ language }: Props) {
       };
 
   const homeHref = isPolish ? "/" : "/en";
-  const supportHref = "https://buymeacoffee.com/dyelotyapp";
+  const supportHref = "https://suppi.pl/dyeloty";
 
   return (
     <section className="py-10 sm:py-16">

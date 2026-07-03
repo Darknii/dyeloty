@@ -66,7 +66,7 @@ export default function Header({ language }: Props) {
   const aboutHref = language === "pl" ? "/about" : "/en/about";
   const listingsHref = `${homeHref}#listings`;
   const howItWorksHref = `${homeHref}#how-it-works`;
-  const supportHref = "https://buymeacoffee.com/dyelotyapp";
+  const supportHref = "https://suppi.pl/dyeloty";
   const accountLabel =
     session?.user?.user_metadata?.display_name ??
     session?.user?.user_metadata?.name ??
