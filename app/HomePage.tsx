@@ -1,15 +1,10 @@
-import {
-  Heart,
-  Search,
-  ShieldCheck,
-  Spool,
-  UsersRound,
-} from "lucide-react";
+import { BadgeCheck, Hash, Package, Search, Tags } from "lucide-react";
 import Image from "next/image";
 import { Suspense, type ReactNode } from "react";
 import Header from "./Header";
-import Listings, { ListingsLoading } from "./Listings";
+import Listings, { getHomepageListings, ListingsLoading } from "./Listings";
 import Footer from "./Footer";
+import type { ListingSearchItem } from "./ListingSearchResults";
 
 type Props = {
   language: "en" | "pl";
@@ -25,7 +20,14 @@ export type ListingFilters = {
   status?: string | string[];
 };
 
-export default function HomePage({ language, filters = {} }: Props) {
+type ListingStats = {
+  totalListings: number;
+  uniqueDyeLots: number;
+  uniqueBrands: number;
+  availableListings: number;
+};
+
+export default async function HomePage({ language, filters = {} }: Props) {
   const t =
     language === "pl"
       ? {
@@ -37,23 +39,20 @@ export default function HomePage({ language, filters = {} }: Props) {
           description:
             "Dyeloty pomaga dziewiarkom znaleźć włóczki z tej samej partii farbowania.",
           descriptionTwo: "Szybko. Wygodnie. Z miłości do dziergania.",
-          heroPhoto: "Miejsce na zdjęcie włóczek",
+          heroPhoto: "Pastelowe włóczki w misce",
           heroSearch: "Szukaj",
           heroSearchPlaceholder:
             "Szukaj po marce, nazwie włóczki, kolorze lub dye lot…",
           search: "Szukaj",
-          popular: "Popularne wyszukiwania:",
+          popular: "Przykładowe wyszukiwania:",
           recent: "Najnowsze ogłoszenia",
           searchResults: "Wyniki wyszukiwania",
           seeAll: "Zobacz wszystkie",
           statsListings: "Ogłoszeń włóczek",
-          statsListingsSub: "z różnych marek",
-          statsLots: "Znalezione partie",
-          statsLotsSub: "dzięki Dyelotom",
-          statsUsers: "Zadowolonych dziewiarek",
-          statsUsersSub: "dołączyło do nas",
-          statsSafe: "Bezpieczne zakupy",
-          statsSafeSub: "i kontakt ze sprzedającym",
+          statsDyeLots: "Unikalnych partii",
+          statsBrands: "Marek włóczek",
+          statsAvailable: "Dostępnych ogłoszeń",
+          statsHelper: "Liczniki pokazują aktualne dane z dodanych ogłoszeń.",
           howTitle: "Jak to działa?",
           howIntro:
             "Najpierw sprawdź etykietę i numer partii farbowania. Potem Dyeloty pomaga znaleźć osoby, które mają właśnie ten brakujący motek.",
@@ -81,22 +80,19 @@ export default function HomePage({ language, filters = {} }: Props) {
           description:
             "Dyeloty is a place for makers looking for yarn from the same dye lot.",
           descriptionTwo: "Fast. Simple. Made with love for knitting.",
-          heroPhoto: "Yarn photo area",
+          heroPhoto: "Pastel yarn in a bowl",
           heroSearch: "Search",
           heroSearchPlaceholder: "Search by brand, yarn name, color, or dye lot…",
           search: "Search",
-          popular: "Popular searches:",
+          popular: "Example searches:",
           recent: "Newest listings",
           searchResults: "Search results",
           seeAll: "See all",
           statsListings: "Yarn listings",
-          statsListingsSub: "from many brands",
-          statsLots: "Matched lots",
-          statsLotsSub: "thanks to Dyeloty",
-          statsUsers: "Happy makers",
-          statsUsersSub: "joined us",
-          statsSafe: "Safe buying",
-          statsSafeSub: "with seller contact",
+          statsDyeLots: "Unique dye lots",
+          statsBrands: "Yarn brands",
+          statsAvailable: "Available listings",
+          statsHelper: "Counters show current data from added listings.",
           howTitle: "How it works?",
           howIntro:
             "Start with the yarn label and dye lot number. Dyeloty helps you find people who may have the missing skein from that exact batch.",
@@ -119,6 +115,8 @@ export default function HomePage({ language, filters = {} }: Props) {
   const chips = ["Drops Air", "Alize Puffy", "Merino Extra Fine", "Baby Merino", "Kokonki"];
   const homeHref = language === "pl" ? "/" : "/en";
   const normalizedFilters = normalizeFilters(filters);
+  const listingsResult = await getHomepageListings();
+  const stats = getListingStats(listingsResult.listings);
   const hasActiveSearch = Boolean(
     normalizedFilters.q ||
       normalizedFilters.brand ||
@@ -195,34 +193,17 @@ export default function HomePage({ language, filters = {} }: Props) {
           </form>
         </section>
 
-        <section className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-5 shadow-[0_12px_38px_rgba(51,36,82,0.08)] sm:p-6">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <StatItem
-              icon={<Spool size={28} />}
-              value="1 248"
-              title={t.statsListings}
-              subtitle={t.statsListingsSub}
-            />
-            <StatItem
-              icon={<Heart size={30} />}
-              value="3 892"
-              title={t.statsLots}
-              subtitle={t.statsLotsSub}
-            />
-            <StatItem
-              icon={<UsersRound size={30} />}
-              value="2 156"
-              title={t.statsUsers}
-              subtitle={t.statsUsersSub}
-            />
-            <StatItem
-              icon={<ShieldCheck size={31} />}
-              value="100%"
-              title={t.statsSafe}
-              subtitle={t.statsSafeSub}
-            />
-          </div>
-        </section>
+        <ListingStatsBar
+          stats={stats}
+          language={language}
+          labels={{
+            listings: t.statsListings,
+            dyeLots: t.statsDyeLots,
+            brands: t.statsBrands,
+            available: t.statsAvailable,
+            helper: t.statsHelper,
+          }}
+        />
 
         <section id="how-it-works" className="mt-6 overflow-hidden rounded-2xl border border-[#E8E1F0] bg-white shadow-[0_12px_38px_rgba(51,36,82,0.08)]">
           <div className="grid gap-0 lg:grid-cols-[0.34fr_0.66fr]">
@@ -239,19 +220,19 @@ export default function HomePage({ language, filters = {} }: Props) {
             </div>
 
             <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-3">
-            {t.howSteps.map((step, index) => (
-              <div key={step.title} className="rounded-2xl bg-[#FAF8FC] p-5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F1EAF8] text-sm font-bold text-[#7438B7]">
-                  {index + 1}
+              {t.howSteps.map((step, index) => (
+                <div key={step.title} className="rounded-2xl bg-[#FAF8FC] p-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F1EAF8] text-sm font-bold text-[#7438B7]">
+                    {index + 1}
+                  </div>
+                  <h3 className="mt-4 text-base font-bold text-[#17142E]">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-sm font-medium leading-6 text-[#6E6582]">
+                    {step.text}
+                  </p>
                 </div>
-                <h3 className="mt-4 text-base font-bold text-[#17142E]">
-                  {step.title}
-                </h3>
-                <p className="mt-2 text-sm font-medium leading-6 text-[#6E6582]">
-                  {step.text}
-                </p>
-              </div>
-            ))}
+              ))}
             </div>
           </div>
         </section>
@@ -271,7 +252,12 @@ export default function HomePage({ language, filters = {} }: Props) {
           </div>
 
           <Suspense fallback={<ListingsLoading />}>
-            <Listings language={language} filters={normalizedFilters} />
+            <Listings
+              language={language}
+              filters={normalizedFilters}
+              initialListings={listingsResult.listings}
+              initialLoadError={listingsResult.error}
+            />
           </Suspense>
         </section>
       </div>
@@ -298,6 +284,104 @@ function getFirstParam(value: string | string[] | undefined) {
   }
 
   return value ?? "";
+}
+
+function getListingStats(listings: ListingSearchItem[]): ListingStats {
+  const brands = new Set<string>();
+  const dyeLots = new Set<string>();
+  let availableListings = 0;
+
+  listings.forEach((listing) => {
+    addNormalizedValue(brands, listing.brand);
+    addNormalizedValue(dyeLots, listing.dyelot ?? listing.dye_lot);
+
+    if (listing.status === "available") {
+      availableListings += 1;
+    }
+  });
+
+  return {
+    totalListings: listings.length,
+    uniqueDyeLots: dyeLots.size,
+    uniqueBrands: brands.size,
+    availableListings,
+  };
+}
+
+function addNormalizedValue(values: Set<string>, value: string | null | undefined) {
+  const normalized = value?.trim().toLocaleLowerCase("pl-PL");
+
+  if (normalized) {
+    values.add(normalized);
+  }
+}
+
+function ListingStatsBar({
+  stats,
+  language,
+  labels,
+}: {
+  stats: ListingStats;
+  language: "en" | "pl";
+  labels: {
+    listings: string;
+    dyeLots: string;
+    brands: string;
+    available: string;
+    helper: string;
+  };
+}) {
+  const items = [
+    {
+      label: labels.listings,
+      value: stats.totalListings,
+      icon: <Package size={27} />,
+    },
+    {
+      label: labels.dyeLots,
+      value: stats.uniqueDyeLots,
+      icon: <Hash size={27} />,
+    },
+    {
+      label: labels.brands,
+      value: stats.uniqueBrands,
+      icon: <Tags size={27} />,
+    },
+    {
+      label: labels.available,
+      value: stats.availableListings,
+      icon: <BadgeCheck size={27} />,
+    },
+  ];
+
+  return (
+    <section className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-5 shadow-[0_14px_42px_rgba(51,36,82,0.08)] sm:p-6">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map((item) => (
+          <div key={item.label} className="flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#F1EAF8] text-[#6F4FA0] sm:h-16 sm:w-16">
+              {item.icon}
+            </div>
+            <div>
+              <div className="text-2xl font-bold leading-tight text-[#17142E] sm:text-3xl">
+                {formatStatValue(item.value, language)}
+              </div>
+              <div className="mt-1 text-sm font-semibold leading-5 text-[#17142E]">
+                {item.label}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-5 border-t border-[#F0EAF5] pt-4 text-sm font-medium text-[#6E6582]">
+        {labels.helper}
+      </p>
+    </section>
+  );
+}
+
+function formatStatValue(value: number, language: "en" | "pl") {
+  return new Intl.NumberFormat(language === "pl" ? "pl-PL" : "en-US").format(value);
 }
 
 function SearchField({
@@ -327,35 +411,6 @@ function SearchField({
         className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition placeholder:text-[#9489AA] focus:border-[#A875D2]"
       />
     </label>
-  );
-}
-
-function StatItem({
-  icon,
-  value,
-  title,
-  subtitle,
-}: {
-  icon: ReactNode;
-  value: string;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="flex items-center gap-5">
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#F1EAF8] text-[#6E5B93]">
-        {icon}
-      </div>
-      <div>
-        <div className="text-2xl font-bold leading-tight text-[#17142E]">
-          {value}
-        </div>
-        <div className="mt-1 font-bold leading-snug text-[#17142E]">
-          {title}
-        </div>
-        <div className="text-sm leading-6 text-[#70677F]">{subtitle}</div>
-      </div>
-    </div>
   );
 }
 
