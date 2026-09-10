@@ -45,10 +45,19 @@ type FavoriteRow = {
   listing_id: number | string | null;
 };
 
+type PublicProfile = {
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+};
+
 type AccountSection = "listings" | "favorites";
 
 export default function AccountPage({ language = "pl" }: { language?: "en" | "pl" }) {
   const t = language === "pl" ? accountCopy.pl : accountCopy.en;
+  const profileT = language === "pl"
+    ? { title: "Mój publiczny profil", intro: "Ustaw nick, aby inne zalogowane osoby mogły znaleźć Twój profil.", username: "Nick", avatar: "Adres avatara (opcjonalnie)", save: "Zapisz profil", view: "Zobacz mój profil", format: "Użyj 3–30 małych liter, cyfr lub _.", invalid: "Nick musi mieć 3–30 małych liter, cyfr lub _.", taken: "Ten nick jest już zajęty.", error: "Nie udało się zapisać profilu.", saved: "Profil został zapisany." }
+    : { title: "My public profile", intro: "Set a username so other signed-in users can find your profile.", username: "Username", avatar: "Avatar URL (optional)", save: "Save profile", view: "View my profile", format: "Use 3–30 lowercase letters, numbers, or _.", invalid: "Username must use 3–30 lowercase letters, numbers, or _.", taken: "This username is already taken.", error: "Could not save the profile.", saved: "Profile saved." };
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<AccountSection>(() =>
@@ -65,6 +74,11 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
   const [displayName, setDisplayName] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
+  const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
+  const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [isSavingPublicProfile, setIsSavingPublicProfile] = useState(false);
+  const [publicProfileMessage, setPublicProfileMessage] = useState("");
 
   const loadListings = useCallback(async (userId: string) => {
     setIsListingsLoading(true);
@@ -139,6 +153,18 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
     );
   }, [t.loadFavoritesError]);
 
+  const loadPublicProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_id, username, avatar_url")
+      .eq("user_id", userId)
+      .maybeSingle<PublicProfile>();
+
+    setPublicProfile(data ?? null);
+    setUsername(data?.username ?? "");
+    setAvatarUrl(data?.avatar_url ?? "");
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -148,6 +174,7 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
       if (session?.user) {
         void loadListings(session.user.id);
         void loadFavorites(session.user.id);
+        void loadPublicProfile(session.user.id);
       }
     });
 
@@ -160,14 +187,18 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
       if (session?.user) {
         void loadListings(session.user.id);
         void loadFavorites(session.user.id);
+        void loadPublicProfile(session.user.id);
       } else {
         setListings([]);
         setFavoriteListings([]);
+        setPublicProfile(null);
+        setUsername("");
+        setAvatarUrl("");
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [loadFavorites, loadListings]);
+  }, [loadFavorites, loadListings, loadPublicProfile]);
 
   async function handleLogin() {
     await supabase.auth.signInWithOAuth({
@@ -231,6 +262,42 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
         : currentSession,
     );
     setProfileMessage(t.nameSaved);
+  }
+
+  async function handleSavePublicProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session?.user) return;
+
+    const normalizedUsername = username.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,30}$/.test(normalizedUsername)) {
+      setPublicProfileMessage(profileT.invalid);
+      return;
+    }
+
+    const normalizedAvatarUrl = avatarUrl.trim() || null;
+    if (normalizedAvatarUrl && !/^https?:\/\//.test(normalizedAvatarUrl)) {
+      setPublicProfileMessage(profileT.error);
+      return;
+    }
+
+    setIsSavingPublicProfile(true);
+    setPublicProfileMessage("");
+    const { data, error } = await supabase
+      .from("profiles")
+      .upsert({ user_id: session.user.id, username: normalizedUsername, avatar_url: normalizedAvatarUrl }, { onConflict: "user_id" })
+      .select("user_id, username, avatar_url")
+      .single<PublicProfile>();
+    setIsSavingPublicProfile(false);
+
+    if (error || !data) {
+      setPublicProfileMessage(error?.code === "23505" ? profileT.taken : profileT.error);
+      return;
+    }
+
+    setPublicProfile(data);
+    setUsername(data.username);
+    setAvatarUrl(data.avatar_url ?? "");
+    setPublicProfileMessage(profileT.saved);
   }
 
   async function handleDelete(listingId: number) {
@@ -418,6 +485,54 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
             {profileMessage ? (
               <p className="mt-2 text-sm text-[#6E6582]">{profileMessage}</p>
             ) : null}
+          </form>
+
+          <form onSubmit={handleSavePublicProfile} className="mt-6 max-w-xl rounded-2xl bg-[#FAF8FC] p-5">
+            <h2 className="text-lg font-bold">{profileT.title}</h2>
+            <p className="mt-1 text-sm leading-6 text-[#6E6582]">{profileT.intro}</p>
+            <label htmlFor="username" className="mt-4 block text-sm font-semibold text-[#514A67]">
+              {profileT.username}
+              <input
+                id="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value.toLowerCase())}
+                maxLength={30}
+                autoCapitalize="none"
+                autoCorrect="off"
+                className="mt-2 min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition focus:border-[#A875D2]"
+              />
+            </label>
+            <p className="mt-1 text-xs text-[#8A7A9D]">{profileT.format}</p>
+            <label htmlFor="avatarUrl" className="mt-4 block text-sm font-semibold text-[#514A67]">
+              {profileT.avatar}
+              <input
+                id="avatarUrl"
+                type="url"
+                value={avatarUrl}
+                onChange={(event) => setAvatarUrl(event.target.value)}
+                placeholder="https://…"
+                className="mt-2 min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition focus:border-[#A875D2]"
+              />
+            </label>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="submit"
+                disabled={isSavingPublicProfile}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#7438B7] px-5 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {isSavingPublicProfile ? <Loader2 className="animate-spin" size={17} /> : null}
+                {profileT.save}
+              </button>
+              {publicProfile ? (
+                <Link
+                  href={language === "pl" ? `/profile/${publicProfile.username}` : `/en/profile/${publicProfile.username}`}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D8CCE7] px-5 text-sm font-semibold text-[#7438B7]"
+                >
+                  {profileT.view}
+                </Link>
+              ) : null}
+            </div>
+            {publicProfileMessage ? <p className="mt-3 text-sm text-[#6E6582]">{publicProfileMessage}</p> : null}
           </form>
 
           <button

@@ -26,7 +26,7 @@ export default function AuthCallbackPage() {
         const code = url.searchParams.get("code");
         const oauthError = url.searchParams.get("error");
         const requestedPath = url.searchParams.get("next");
-        const nextPath = ["/account", "/en/account", "/looking/add", "/en/looking/add"].includes(requestedPath ?? "") ? requestedPath! : "/account";
+        const nextPath = getSafeNextPath(requestedPath);
 
         if (oauthError) {
           throw new Error("OAuth provider returned an error.");
@@ -144,4 +144,16 @@ function getAuthErrorMessage(error: unknown) {
   }
 
   return "Nie udało się dokończyć logowania.";
+}
+
+function getSafeNextPath(path: string | null) {
+  if (["/account", "/en/account", "/looking/add", "/en/looking/add", "/users", "/en/users"].includes(path ?? "")) {
+    return path!;
+  }
+
+  if (/^\/(?:en\/)?profile\/[a-z0-9_]{3,30}$/i.test(path ?? "")) {
+    return path!;
+  }
+
+  return "/account";
 }
