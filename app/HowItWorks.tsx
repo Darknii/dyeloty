@@ -11,8 +11,8 @@ export default function HowItWorks({ language }: Props) {
           title: "Jak to działa?",
           step1: "Znajdź włóczkę",
           text1: "Wyszukaj włóczkę, której potrzebujesz do swojego projektu.",
-          step2: "Skontaktuj się z właścicielem",
-          text2: "Napisz do osoby, która ma włóczkę, której szukasz.",
+          step2: "Przejdź do ogłoszenia",
+          text2: "Przejdź do ogłoszenia i skontaktuj się ze sprzedającą.",
           step3: "Dokończ projekt",
           text3: "Zdobądź brakujący motek i ciesz się ukończoną robótką.",
         }
@@ -20,8 +20,8 @@ export default function HowItWorks({ language }: Props) {
           title: "How it works?",
           step1: "Find yarn",
           text1: "Search for the yarn you need for your project.",
-          step2: "Contact the owner",
-          text2: "Message the person who has the yarn you're looking for.",
+          step2: "Open the listing",
+          text2: "Open the listing and contact the seller.",
           step3: "Finish your project",
           text3: "Get your missing skein and enjoy your finished project.",
         };

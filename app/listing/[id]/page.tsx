@@ -18,9 +18,10 @@ import FavoriteButton from "../../FavoriteButton";
 import OwnerListingActions from "../../OwnerListingActions";
 import {
   getListingStatusClassName,
-  getListingStatusLabel,
+  getLocalizedListingStatusLabel,
   normalizeListingStatus,
 } from "../../listingStatus";
+import { getSafeExternalListingUrl } from "../../marketplace";
 
 type Listing = {
   id: number;
@@ -48,8 +49,19 @@ type Props = {
   }>;
 };
 
-export default async function ListingDetailsPage({ params }: Props) {
+export async function ListingDetailsPage({
+  params,
+  language = "pl",
+}: Props & { language?: "en" | "pl" }) {
   const { id } = await params;
+  const t =
+    language === "pl"
+      ? {
+          back: "Wróć do ogłoszeń", noPhoto: "Brak zdjęcia", noPhotoHint: "Szczegóły włóczki znajdziesz w opisie i pod linkiem do ogłoszenia.", added: "Dodane", brand: "Producent", color: "Kolor", skeins: "Ilość motków", location: "Lokalizacja", description: "Opis", noDescription: "Brak opisu.", soldHint: "To ogłoszenie jest oznaczone jako sprzedane lub nieaktualne. Link zewnętrzny może już nie prowadzić do dostępnej oferty.", openListing: "Przejdź do ogłoszenia", noLink: "Brak linku do ogłoszenia.", externalListing: "Ogłoszenie zewnętrzne",
+        }
+      : {
+          back: "Back to listings", noPhoto: "No photo available", noPhotoHint: "Yarn details are available in the description and through the external listing.", added: "Added", brand: "Brand", color: "Color", skeins: "Skeins", location: "Location", description: "Description", noDescription: "No description.", soldHint: "This listing is marked as sold or inactive. The external link may no longer lead to an available offer.", openListing: "Open listing", noLink: "No external listing link is available.", externalListing: "External listing",
+        };
 
   const { data: listing, error } = await supabase
     .from("listings")
@@ -62,20 +74,21 @@ export default async function ListingDetailsPage({ params }: Props) {
   }
 
   const imageUrl = getListingImageUrl(listing);
-  const addedAt = formatDate(listing.created_at);
+  const addedAt = formatDate(listing.created_at, language);
   const marketplace = getMarketplaceName(listing.type);
+  const externalListingUrl = getSafeExternalListingUrl(listing.contact);
   const normalizedStatus = normalizeListingStatus(listing.status);
-  const statusLabel = getListingStatusLabel(listing.status);
+  const statusLabel = getLocalizedListingStatusLabel(listing.status, language);
 
   return (
     <main className="min-h-screen bg-[#F8F6FB] text-[#1F1830]">
       <section className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:py-12">
         <Link
-          href="/"
+          href={language === "pl" ? "/" : "/en"}
           className="inline-flex items-center gap-2 text-sm font-semibold text-[#6C5A86] transition hover:text-[#6F36B9]"
         >
           <ArrowLeft size={17} />
-          Wróć do ogłoszeń
+          {t.back}
         </Link>
 
         <div className="mt-7 grid overflow-hidden rounded-2xl border border-[#E8E1F0] bg-white shadow-[0_18px_55px_rgba(51,36,82,0.10)] lg:grid-cols-[0.42fr_0.58fr]">
@@ -95,10 +108,10 @@ export default async function ListingDetailsPage({ params }: Props) {
                   </span>
                   <div>
                     <div className="font-semibold text-[#4A3B62]">
-                      Brak zdjęcia
+                      {t.noPhoto}
                     </div>
                     <p className="mt-1 max-w-xs text-sm text-[#7B718A]">
-                      Szczegóły włóczki znajdziesz w opisie i pod linkiem do ogłoszenia.
+                      {t.noPhotoHint}
                     </p>
                   </div>
                 </div>
@@ -110,7 +123,7 @@ export default async function ListingDetailsPage({ params }: Props) {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="inline-flex items-center gap-2 text-sm font-medium text-[#7B718A]">
                 <CalendarDays size={16} />
-                Dodane {addedAt}
+                {t.added} {addedAt}
               </div>
 
               <div className="flex items-center gap-2">
@@ -120,13 +133,13 @@ export default async function ListingDetailsPage({ params }: Props) {
                   <CheckCircle2 size={16} />
                   {statusLabel}
                 </span>
-                <FavoriteButton listingId={listing.id} />
+                <FavoriteButton listingId={listing.id} language={language} />
               </div>
             </div>
 
             <div className="mt-6">
               <p className="text-sm font-semibold uppercase tracking-wide text-[#7A3FC5]">
-                {listing.brand ?? "Producent"}
+                {listing.brand ?? t.brand}
               </p>
               <h1 className="mt-2 text-3xl font-semibold leading-tight text-[#1F1830] sm:text-4xl">
                 {listing.yarn_name ?? "-"}
@@ -140,16 +153,16 @@ export default async function ListingDetailsPage({ params }: Props) {
               ) : null}
 
               <div className="mt-5 grid grid-cols-3 gap-2 lg:hidden">
-                <QuickFact label="Kolor" value={listing.color} />
+                <QuickFact label={t.color} value={listing.color} />
                 <QuickFact label="Dye lot" value={listing.dyelot} />
-                <QuickFact label="Motki" value={listing.skeins} />
+                <QuickFact label={t.skeins} value={listing.skeins} />
               </div>
 
-              <OwnerListingActions listingId={listing.id} ownerId={listing.user_id} />
+              <OwnerListingActions listingId={listing.id} ownerId={listing.user_id} language={language} />
 
               {normalizedStatus === "sold" ? (
                 <div className="mt-5 rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC] p-4 text-sm leading-6 text-[#6E6582]">
-                  To ogłoszenie jest oznaczone jako sprzedane lub nieaktualne. Link zewnętrzny może już nie prowadzić do dostępnej oferty.
+                  {t.soldHint}
                 </div>
               ) : null}
             </div>
@@ -157,12 +170,12 @@ export default async function ListingDetailsPage({ params }: Props) {
             <div className="mt-7 hidden gap-3 sm:grid-cols-2 lg:grid">
               <DetailItem
                 icon={<Tag size={20} />}
-                label="Producent"
+                label={t.brand}
                 value={listing.brand}
               />
               <DetailItem
                 icon={<Palette size={20} />}
-                label="Kolor"
+                label={t.color}
                 value={listing.color}
               />
               <DetailItem
@@ -172,12 +185,12 @@ export default async function ListingDetailsPage({ params }: Props) {
               />
               <DetailItem
                 icon={<Package size={20} />}
-                label="Ilość motków"
+                label={t.skeins}
                 value={listing.skeins}
               />
               <DetailItem
                 icon={<MapPin size={20} />}
-                label="Lokalizacja"
+                label={t.location}
                 value={listing.country}
               />
               <DetailItem
@@ -189,32 +202,32 @@ export default async function ListingDetailsPage({ params }: Props) {
 
             <div className="mt-5 hidden rounded-2xl border border-[#E8E1F0] bg-[#FCFAFF] p-5 lg:block">
               <div className="text-sm font-semibold text-[#7A3FC5]">
-                Opis
+                {t.description}
               </div>
               <p className="mt-2 whitespace-pre-line text-[#3C334D]">
-                {listing.description || "Brak opisu."}
+                {listing.description || t.noDescription}
               </p>
             </div>
 
-            {listing.contact ? (
+            {externalListingUrl ? (
               <a
-                href={listing.contact}
+                href={externalListingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-6 hidden w-full items-center justify-center gap-2 rounded-2xl bg-[#7438B7] px-7 py-4 text-base font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.25)] transition hover:bg-[#622CA2] sm:text-lg lg:inline-flex"
               >
                 <ExternalLink size={20} />
-                Przejdź do ogłoszenia
+                {t.openListing}
               </a>
             ) : (
               <div className="mt-6 hidden rounded-2xl border border-[#E8E1F0] bg-[#FCFAFF] px-5 py-4 text-[#6C5A86] lg:block">
-                Brak linku do ogłoszenia.
+                {t.noLink}
               </div>
             )}
 
             {marketplace ? (
               <p className="mt-3 hidden text-center text-sm font-medium text-[#7B718A] lg:block">
-                Ogłoszenie zewnętrzne: {marketplace}
+                {t.externalListing}: {marketplace}
               </p>
             ) : null}
           </section>
@@ -223,12 +236,12 @@ export default async function ListingDetailsPage({ params }: Props) {
             <div className="grid gap-3">
               <DetailItem
                 icon={<Tag size={20} />}
-                label="Producent"
+                label={t.brand}
                 value={listing.brand}
               />
               <DetailItem
                 icon={<Palette size={20} />}
-                label="Kolor"
+                label={t.color}
                 value={listing.color}
               />
               <DetailItem
@@ -238,12 +251,12 @@ export default async function ListingDetailsPage({ params }: Props) {
               />
               <DetailItem
                 icon={<Package size={20} />}
-                label="Ilość motków"
+                label={t.skeins}
                 value={listing.skeins}
               />
               <DetailItem
                 icon={<MapPin size={20} />}
-                label="Lokalizacja"
+                label={t.location}
                 value={listing.country}
               />
               <DetailItem
@@ -255,32 +268,32 @@ export default async function ListingDetailsPage({ params }: Props) {
 
             <div className="mt-5 rounded-2xl border border-[#E8E1F0] bg-[#FCFAFF] p-5">
               <div className="text-sm font-semibold text-[#7A3FC5]">
-                Opis
+                {t.description}
               </div>
               <p className="mt-2 whitespace-pre-line text-[#3C334D]">
-                {listing.description || "Brak opisu."}
+                {listing.description || t.noDescription}
               </p>
             </div>
 
-            {listing.contact ? (
+            {externalListingUrl ? (
               <a
-                href={listing.contact}
+                href={externalListingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-[#7438B7] px-7 py-4 text-base font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.25)] transition hover:bg-[#622CA2]"
               >
                 <ExternalLink size={20} />
-                Przejdź do ogłoszenia
+                {t.openListing}
               </a>
             ) : (
               <div className="mt-6 rounded-2xl border border-[#E8E1F0] bg-[#FCFAFF] px-5 py-4 text-[#6C5A86]">
-                Brak linku do ogłoszenia.
+                {t.noLink}
               </div>
             )}
 
             {marketplace ? (
               <p className="mt-3 text-center text-sm font-medium text-[#7B718A]">
-                Ogłoszenie zewnętrzne: {marketplace}
+                {t.externalListing}: {marketplace}
               </p>
             ) : null}
           </section>
@@ -329,12 +342,16 @@ function DetailItem({
   );
 }
 
-function formatDate(createdAt: string | null) {
+export default function Page({ params }: Props) {
+  return <ListingDetailsPage params={params} />;
+}
+
+function formatDate(createdAt: string | null, language: "en" | "pl") {
   if (!createdAt) {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("pl-PL", {
+  return new Intl.DateTimeFormat(language === "pl" ? "pl-PL" : "en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",

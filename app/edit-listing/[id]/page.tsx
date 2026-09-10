@@ -8,6 +8,7 @@ import { ArrowLeft, Loader2, Save } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../supabase";
 import { removeListingImageFromStorage } from "../../listingImages";
+import { getMarketplaceType } from "../../marketplace";
 import {
   LISTING_STATUS_OPTIONS,
   normalizeListingStatus,
@@ -160,13 +161,12 @@ export default function EditListingPage({ params }: Props) {
       return;
     }
 
-    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-      setMessage("Podaj poprawny link do ogłoszenia.");
+    const type = getMarketplaceType(parsedUrl);
+
+    if (!type) {
+      setMessage("Dodaj link do ogłoszenia z Vinted lub OLX.");
       return;
     }
-
-    const hostname = parsedUrl.hostname.toLowerCase();
-    const type = hostname.includes("olx") ? "olx" : "vinted";
 
     setIsSubmitting(true);
     const previousImageUrl = currentImageUrl;
@@ -199,6 +199,15 @@ export default function EditListingPage({ params }: Props) {
 
     if (error) {
       console.error("Could not update listing", error);
+      if (uploadedImageUrl) {
+        const cleanupError = await removeListingImageFromStorage(
+          uploadedImageUrl,
+          session.user.id,
+        );
+        if (cleanupError) {
+          console.warn("Listing update failed and image cleanup failed", cleanupError);
+        }
+      }
       setMessage("Nie udało się zapisać zmian. Spróbuj ponownie.");
       return;
     }
@@ -487,8 +496,6 @@ function QualityChecklist() {
     "zdjęcie włóczki lub etykiety",
     "numer partii / dye lot",
     "liczbę motków",
-    "metraż i gramaturę",
-    "informację, czy włóczka jest nowa, napoczęta czy z odzysku",
   ];
 
   return (

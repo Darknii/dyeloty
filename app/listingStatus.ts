@@ -18,7 +18,19 @@ export function normalizeListingStatus(status: string | null): ListingStatus {
 }
 
 export function getListingStatusLabel(status: string | null) {
+  return getLocalizedListingStatusLabel(status, "pl");
+}
+
+export function getLocalizedListingStatusLabel(
+  status: string | null,
+  language: "en" | "pl",
+) {
   const normalizedStatus = normalizeListingStatus(status);
+  if (language === "en") {
+    return ({ available: "Available", reserved: "Reserved", sold: "Sold / inactive" })[
+      normalizedStatus
+    ];
+  }
   return (
     LISTING_STATUS_OPTIONS.find((option) => option.value === normalizedStatus)
       ?.label ?? "Dostępne"

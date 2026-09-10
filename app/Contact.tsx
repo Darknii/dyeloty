@@ -28,10 +28,10 @@ export default function Contact({ language }: Props) {
               </div>
 
               <a
-                href="mailto:dyeloty.contact@gmail.com"
+                href="mailto:kontakt@dyeloty.pl"
                 className="text-[#90A885] hover:underline"
               >
-                dyeloty.contact@gmail.com
+                kontakt@dyeloty.pl
               </a>
             </div>
 
@@ -52,10 +52,10 @@ export default function Contact({ language }: Props) {
               </div>
 
               <a
-                href="mailto:dyeloty.contact@gmail.com"
+                href="mailto:kontakt@dyeloty.pl"
                 className="text-[#90A885] hover:underline"
               >
-                dyeloty.contact@gmail.com
+                kontakt@dyeloty.pl
               </a>
             </div>
 

@@ -151,14 +151,22 @@ export default function Header({ language }: Props) {
           >
             <Plus size={18} />
             <span className="hidden md:inline">{t.add}</span>
-            <span className="md:hidden">Dodaj</span>
+            <span className="md:hidden">{language === "pl" ? "Dodaj" : "Add"}</span>
           </a>
 
           <button
             type="button"
             onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[#E8E2EE] text-[#17142E] transition hover:bg-[#F6F0FB] md:hidden"
-            aria-label={isMenuOpen ? "Zamknij menu" : "Otwórz menu"}
+            aria-label={
+              isMenuOpen
+                ? language === "pl"
+                  ? "Zamknij menu"
+                  : "Close menu"
+                : language === "pl"
+                  ? "Otwórz menu"
+                  : "Open menu"
+            }
             aria-expanded={isMenuOpen}
           >
             {isMenuOpen ? <X size={22} /> : <Menu size={22} />}

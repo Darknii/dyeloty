@@ -44,7 +44,7 @@ export default function Footer({ language }: Props) {
           </a>
 
           <a
-            href="/privacy"
+            href={language === "pl" ? "/privacy" : "/en/privacy"}
             className="transition hover:text-[#7438B7]"
           >
             {language === "pl" ? "Prywatność" : "Privacy"}

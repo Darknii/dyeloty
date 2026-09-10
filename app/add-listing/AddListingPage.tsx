@@ -8,6 +8,8 @@ import { ArrowLeft, Loader2, Plus, UserRound } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 import { getAuthCallbackRedirectTo } from "../authRedirect";
+import { removeListingImageFromStorage } from "../listingImages";
+import { getMarketplaceType } from "../marketplace";
 
 type Props = {
   language: "en" | "pl";
@@ -104,13 +106,12 @@ export default function AddListingPage({ language }: Props) {
       return;
     }
 
-    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-      setMessage(t.urlError);
+    const type = getMarketplaceType(parsedUrl);
+
+    if (!type) {
+      setMessage(t.marketplaceError);
       return;
     }
-
-    const hostname = parsedUrl.hostname.toLowerCase();
-    const type = hostname.includes("olx") ? "olx" : "vinted";
 
     setIsSubmitting(true);
 
@@ -143,6 +144,12 @@ export default function AddListingPage({ language }: Props) {
 
     if (error) {
       console.error("Could not create listing", error);
+      if (imageUrl) {
+        const cleanupError = await removeListingImageFromStorage(imageUrl, session.user.id);
+        if (cleanupError) {
+          console.warn("Listing creation failed and image cleanup failed", cleanupError);
+        }
+      }
       setMessage(t.genericError);
       return;
     }
@@ -230,8 +237,6 @@ export default function AddListingPage({ language }: Props) {
             "zdjęcie włóczki lub etykiety",
             "numer partii / dye lot",
             "liczbę motków",
-            "metraż i gramaturę",
-            "informację, czy włóczka jest nowa, napoczęta czy z odzysku",
           ],
           loginTitle: "Aby dodać ogłoszenie, zaloguj się przez Google.",
           loginHint:
@@ -259,6 +264,7 @@ export default function AddListingPage({ language }: Props) {
           requiredError: "Uzupełnij wszystkie pola formularza.",
           skeinsError: "Liczba motków musi być większa od zera.",
           urlError: "Podaj poprawny link do ogłoszenia.",
+          marketplaceError: "Dodaj link do ogłoszenia z Vinted lub OLX.",
           authError: "Musisz być zalogowana lub zalogowany.",
           success: "Ogłoszenie zostało opublikowane.",
           genericError: "Nie udało się dodać ogłoszenia. Spróbuj ponownie.",
@@ -279,8 +285,6 @@ export default function AddListingPage({ language }: Props) {
             "a photo of the yarn or label",
             "the dye lot number",
             "number of skeins",
-            "length and weight",
-            "whether the yarn is new, started, or reclaimed",
           ],
           loginTitle: "Sign in with Google to add a listing.",
           loginHint:
@@ -308,6 +312,7 @@ export default function AddListingPage({ language }: Props) {
           requiredError: "Please fill in all form fields.",
           skeinsError: "Number of skeins must be greater than zero.",
           urlError: "Please enter a valid listing link.",
+          marketplaceError: "Add a listing link from Vinted or OLX.",
           authError: "You must be signed in.",
           success: "Your listing has been published.",
           genericError: "Could not add the listing. Please try again.",
@@ -376,7 +381,7 @@ export default function AddListingPage({ language }: Props) {
                 </Link>
                 {publishedListingId ? (
                   <Link
-                    href={`/listing/${publishedListingId}`}
+                    href={language === "pl" ? `/listing/${publishedListingId}` : `/en/listing/${publishedListingId}`}
                     className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D8CCE7] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-white sm:col-span-2"
                   >
                     {t.viewListing}

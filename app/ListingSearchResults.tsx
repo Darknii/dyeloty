@@ -6,7 +6,6 @@ import {
   MapPin,
   Package,
   RotateCcw,
-  Scale,
   Search,
 } from "lucide-react";
 import Link from "next/link";
@@ -14,7 +13,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import FavoriteButton from "./FavoriteButton";
 import {
   getListingStatusClassName,
-  getListingStatusLabel,
+  getLocalizedListingStatusLabel,
   normalizeListingStatus,
   type ListingStatus,
 } from "./listingStatus";
@@ -74,7 +73,7 @@ export default function ListingSearchResults({
   );
   const [brand, setBrand] = useState("");
   const [status, setStatus] = useState<StatusFilter>(
-    isStatusFilter(initialFilters.status) ? initialFilters.status : "all",
+    isStatusFilter(initialFilters.status) ? initialFilters.status : "available",
   );
   const [dyelot, setDyelot] = useState(initialFilters.dyelot?.trim() ?? "");
 
@@ -107,7 +106,6 @@ export default function ListingSearchResults({
           skeinOne: "motek",
           skeinFew: "motki",
           skeinMany: "motków",
-          weight: "150 m / 50 g",
           lot: "Partia",
         }
       : {
@@ -136,7 +134,6 @@ export default function ListingSearchResults({
           skeinOne: "skein",
           skeinFew: "skeins",
           skeinMany: "skeins",
-          weight: "150 m / 50 g",
           lot: "Lot",
         };
 
@@ -160,7 +157,7 @@ export default function ListingSearchResults({
   function clearFilters() {
     setQuery("");
     setBrand("");
-    setStatus("all");
+    setStatus("available");
     setDyelot("");
   }
 
@@ -301,7 +298,6 @@ function ListingCard({
     skeinOne: string;
     skeinFew: string;
     skeinMany: string;
-    weight: string;
     lot: string;
   };
 }) {
@@ -311,7 +307,7 @@ function ListingCard({
 
   return (
     <Link
-      href={`/listing/${listing.id}`}
+      href={language === "en" ? `/en/listing/${listing.id}` : `/listing/${listing.id}`}
       className="group block min-w-0 rounded-2xl outline-none transition focus-visible:ring-2 focus-visible:ring-[#7438B7] focus-visible:ring-offset-2"
     >
       <article
@@ -366,7 +362,7 @@ function ListingCard({
           <span
             className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getListingStatusClassName(listing.status)}`}
           >
-            {getListingStatusLabel(listing.status)}
+            {getLocalizedListingStatusLabel(listing.status, language)}
           </span>
 
           <div className="mt-4 grid gap-2 text-xs font-medium text-[#6E6582]">
@@ -374,7 +370,6 @@ function ListingCard({
               icon={<Package size={14} />}
               value={formatSkeins(listing.skeins, labels)}
             />
-            <MetaItem icon={<Scale size={14} />} value={labels.weight} />
             <MetaItem
               icon={<Hash size={14} />}
               value={`${labels.lot} ${listing.dyelot ?? listing.dye_lot ?? "-"}`}

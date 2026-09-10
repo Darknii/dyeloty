@@ -2,6 +2,9 @@ import Header from "../../Header";
 import Contact from "../../Contact";
 import SupportDyeloty from "../../SupportDyeloty";
 import Footer from "../../Footer";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Contact Dyeloty", description: "Contact the Dyeloty project team.", alternates: { canonical: "/en/contact" } };
 
 export default function Page() {
   return (
