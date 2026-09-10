@@ -24,7 +24,8 @@ export default function AuthCallbackPage() {
       try {
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
-        const nextPath = url.searchParams.get("next") === "/en/account" ? "/en/account" : "/account";
+        const requestedPath = url.searchParams.get("next");
+        const nextPath = ["/account", "/en/account", "/looking/add", "/en/looking/add"].includes(requestedPath ?? "") ? requestedPath! : "/account";
 
         if (!code) {
           throw new Error("Auth callback is missing the OAuth code parameter.");
