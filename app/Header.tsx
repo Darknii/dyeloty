@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe2, Heart, Menu, Plus, UserRound, X } from "lucide-react";
+import { Globe2, Heart, Menu, MessageCircle, Plus, UserRound, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
@@ -33,7 +33,7 @@ export default function Header({ language }: Props) {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: getAuthCallbackRedirectTo(),
+        redirectTo: getAuthCallbackRedirectTo(language === "pl" ? "/account" : "/en/account"),
       },
     });
   }
@@ -49,6 +49,8 @@ export default function Header({ language }: Props) {
           login: "Zaloguj się",
           add: "Dodaj ogłoszenie",
           account: "Konto",
+          messages: "Wiadomości",
+          looking: "Szukam włóczki",
         }
       : {
           listings: "Listings",
@@ -59,11 +61,17 @@ export default function Header({ language }: Props) {
           login: "Sign in",
           add: "Add listing",
           account: "Account",
+          messages: "Messages",
+          looking: "Looking for yarn",
         };
 
   const homeHref = language === "pl" ? "/" : "/en";
   const addHref = language === "pl" ? "/add-listing/pl" : "/add-listing/en";
   const aboutHref = language === "pl" ? "/about" : "/en/about";
+  const messagesHref = language === "pl" ? "/messages" : "/en/messages";
+  const lookingHref = language === "pl" ? "/looking" : "/en/looking";
+  const accountHref = language === "pl" ? "/account" : "/en/account";
+  const favoritesHref = language === "pl" ? "/account?section=favorites" : "/en/account?section=favorites";
   const listingsHref = `${homeHref}#listings`;
   const howItWorksHref = `${homeHref}#how-it-works`;
   const supportHref = "https://suppi.pl/dyeloty";
@@ -98,6 +106,7 @@ export default function Header({ language }: Props) {
             <a href={aboutHref} className="transition hover:text-[#7438B7]">
               {t.about}
             </a>
+            <a href={lookingHref} className="transition hover:text-[#7438B7]">{t.looking}</a>
             <a
               href={supportHref}
               target="_blank"
@@ -120,16 +129,17 @@ export default function Header({ language }: Props) {
           </a>
 
           <a
-            href="/account?section=favorites"
+            href={favoritesHref}
             className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"
           >
             <Heart size={21} />
             {t.favorites}
           </a>
+          <a href={messagesHref} className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"><MessageCircle size={20} />{t.messages}</a>
 
           {session?.user ? (
             <a
-              href="/account"
+              href={accountHref}
               className="hidden min-h-11 max-w-40 items-center gap-2 truncate rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"
             >
               <UserRound size={20} />
@@ -198,14 +208,16 @@ export default function Header({ language }: Props) {
             >
               {t.about}
             </a>
+            <a href={lookingHref} onClick={() => setIsMenuOpen(false)} className="rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]">{t.looking}</a>
             <a
-              href="/account?section=favorites"
+              href={favoritesHref}
               onClick={() => setIsMenuOpen(false)}
               className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
             >
               <Heart size={19} />
               {t.favorites}
             </a>
+            <a href={messagesHref} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"><MessageCircle size={19} />{t.messages}</a>
             <a
               href={supportHref}
               target="_blank"
@@ -217,7 +229,7 @@ export default function Header({ language }: Props) {
             </a>
             {session?.user ? (
               <a
-                href="/account"
+                href={accountHref}
                 onClick={() => setIsMenuOpen(false)}
                 className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
               >

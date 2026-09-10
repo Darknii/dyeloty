@@ -1,5 +1,5 @@
 "use client";
 
-export function getAuthCallbackRedirectTo() {
-  return `${window.location.origin}/auth/callback`;
+export function getAuthCallbackRedirectTo(nextPath = "/account") {
+  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
 }

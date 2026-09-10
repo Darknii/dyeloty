@@ -24,6 +24,7 @@ export default function AuthCallbackPage() {
       try {
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
+        const nextPath = url.searchParams.get("next") === "/en/account" ? "/en/account" : "/account";
 
         if (!code) {
           throw new Error("Auth callback is missing the OAuth code parameter.");
@@ -60,7 +61,7 @@ export default function AuthCallbackPage() {
 
         if (isMounted) {
           window.clearTimeout(fallbackTimeoutId);
-          window.location.replace("/account");
+          window.location.replace(nextPath);
         }
       } catch (error) {
         console.error("Auth callback failed:", error);

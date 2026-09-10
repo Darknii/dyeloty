@@ -54,6 +54,9 @@ export default async function HomePage({ language, filters = {} }: Props) {
           statsBrands: "Marek włóczek",
           statsAvailable: "Dostępnych ogłoszeń",
           statsHelper: "Liczniki pokazują aktualne dane z dodanych ogłoszeń.",
+          lookingTitle: "Nie znalazłaś swojego dye lotu?",
+          lookingText: "Dodaj ogłoszenie „Szukam” — może ktoś z naszej społeczności ma właśnie tę włóczkę.",
+          lookingCta: "Szukam włóczki →",
           howTitle: "Jak to działa?",
           howIntro:
             "Najpierw sprawdź etykietę i numer partii farbowania. Potem Dyeloty pomaga znaleźć osoby, które mają właśnie ten brakujący motek.",
@@ -94,6 +97,9 @@ export default async function HomePage({ language, filters = {} }: Props) {
           statsBrands: "Yarn brands",
           statsAvailable: "Available listings",
           statsHelper: "Counters show current data from added listings.",
+          lookingTitle: "Still looking for your dye lot?",
+          lookingText: "Post a yarn request — someone in the community may have exactly what you need.",
+          lookingCta: "Looking for yarn →",
           howTitle: "How it works?",
           howIntro:
             "Start with the yarn label and dye lot number. Dyeloty helps you find people who may have the missing skein from that exact batch.",
@@ -205,6 +211,11 @@ export default async function HomePage({ language, filters = {} }: Props) {
             helper: t.statsHelper,
           }}
         />
+
+        <section className="mt-6 flex flex-col gap-4 rounded-2xl border border-[#E8E1F0] bg-white p-5 shadow-[0_12px_38px_rgba(51,36,82,0.08)] sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div><h2 className="text-xl font-bold text-[#17142E]">{t.lookingTitle}</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-[#6E6582]">{t.lookingText}</p></div>
+          <a href={language === "pl" ? "/looking" : "/en/looking"} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[#F4EEF9] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#EDE2F8]">{t.lookingCta}</a>
+        </section>
 
         <section id="how-it-works" className="mt-6 overflow-hidden rounded-2xl border border-[#E8E1F0] bg-white shadow-[0_12px_38px_rgba(51,36,82,0.08)]">
           <div className="grid gap-0 lg:grid-cols-[0.34fr_0.66fr]">

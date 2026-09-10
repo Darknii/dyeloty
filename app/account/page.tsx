@@ -38,6 +38,7 @@ type Listing = {
   country: string | null;
   status: string | null;
   image_url: string | null;
+  listing_type?: "offer" | "wanted" | null;
 };
 
 type FavoriteRow = {
@@ -46,7 +47,8 @@ type FavoriteRow = {
 
 type AccountSection = "listings" | "favorites";
 
-export default function AccountPage() {
+export default function AccountPage({ language = "pl" }: { language?: "en" | "pl" }) {
+  const t = language === "pl" ? accountCopy.pl : accountCopy.en;
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<AccountSection>(() =>
@@ -70,7 +72,7 @@ export default function AccountPage() {
 
     const { data, error } = await supabase
       .from("listings")
-      .select("id, created_at, brand, yarn_name, color, dyelot, skeins, country, status, image_url")
+      .select("id, created_at, brand, yarn_name, color, dyelot, skeins, country, status, image_url, listing_type")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .returns<Listing[]>();
@@ -79,12 +81,12 @@ export default function AccountPage() {
 
     if (error) {
       console.error("Could not load account listings", error);
-      setErrorMessage("Nie udało się pobrać ogłoszeń. Odśwież stronę albo spróbuj ponownie za chwilę.");
+      setErrorMessage(t.loadListingsError);
       return;
     }
 
     setListings(data ?? []);
-  }, []);
+  }, [t.loadListingsError]);
 
   const loadFavorites = useCallback(async (userId: string) => {
     setIsFavoritesLoading(true);
@@ -100,7 +102,7 @@ export default function AccountPage() {
     if (favoritesError) {
       setIsFavoritesLoading(false);
       console.error("Could not load favorites", favoritesError);
-      setErrorMessage("Nie udało się pobrać ulubionych. Spróbuj ponownie za chwilę.");
+      setErrorMessage(t.loadFavoritesError);
       return;
     }
 
@@ -117,7 +119,7 @@ export default function AccountPage() {
 
     const { data, error } = await supabase
       .from("listings")
-      .select("id, created_at, brand, yarn_name, color, dyelot, skeins, country, status, image_url")
+      .select("id, created_at, brand, yarn_name, color, dyelot, skeins, country, status, image_url, listing_type")
       .in("id", favoriteIds)
       .returns<Listing[]>();
 
@@ -125,7 +127,7 @@ export default function AccountPage() {
 
     if (error) {
       console.error("Could not load favorite listings", error);
-      setErrorMessage("Nie udało się pobrać ulubionych ogłoszeń. Spróbuj ponownie za chwilę.");
+      setErrorMessage(t.loadFavoritesError);
       return;
     }
 
@@ -135,7 +137,7 @@ export default function AccountPage() {
         .map((listingId) => listingsById.get(listingId))
         .filter((listing): listing is Listing => Boolean(listing)),
     );
-  }, []);
+  }, [t.loadFavoritesError]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -171,7 +173,7 @@ export default function AccountPage() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: getAuthCallbackRedirectTo(),
+        redirectTo: getAuthCallbackRedirectTo(language === "pl" ? "/account" : "/en/account"),
       },
     });
   }
@@ -190,7 +192,7 @@ export default function AccountPage() {
 
     if (error) {
       console.error("Could not sign out", error);
-      setErrorMessage("Nie udało się wylogować. Spróbuj ponownie.");
+      setErrorMessage(t.logoutError);
       return;
     }
 
@@ -216,7 +218,7 @@ export default function AccountPage() {
 
     if (error) {
       console.error("Could not save display name", error);
-      setProfileMessage("Nie udało się zapisać nazwy. Spróbuj ponownie.");
+      setProfileMessage(t.saveNameError);
       return;
     }
 
@@ -228,7 +230,7 @@ export default function AccountPage() {
           }
         : currentSession,
     );
-    setProfileMessage("Nazwa została zapisana.");
+    setProfileMessage(t.nameSaved);
   }
 
   async function handleDelete(listingId: number) {
@@ -236,7 +238,7 @@ export default function AccountPage() {
       return;
     }
 
-    const confirmed = window.confirm("Czy na pewno chcesz usunąć to ogłoszenie?");
+    const confirmed = window.confirm(t.deleteConfirm);
 
     if (!confirmed) {
       return;
@@ -256,7 +258,7 @@ export default function AccountPage() {
 
     if (error) {
       console.error("Could not delete listing", error);
-      setErrorMessage("Nie udało się usunąć ogłoszenia. Spróbuj ponownie.");
+      setErrorMessage(t.deleteError);
       return;
     }
 
@@ -291,7 +293,7 @@ export default function AccountPage() {
 
     if (error) {
       console.error("Could not remove favorite", error);
-      setErrorMessage("Nie udało się usunąć ogłoszenia z ulubionych. Spróbuj ponownie.");
+      setErrorMessage(t.removeFavoriteError);
       return;
     }
 
@@ -318,7 +320,7 @@ export default function AccountPage() {
 
     if (error) {
       console.error("Could not update listing status", error);
-      setErrorMessage("Nie udało się zmienić statusu ogłoszenia. Spróbuj ponownie.");
+      setErrorMessage(t.statusError);
       return;
     }
 
@@ -327,6 +329,9 @@ export default function AccountPage() {
   }
 
   const isFavoritesSection = activeSection === "favorites";
+  const offerListings = listings.filter((listing) => listing.listing_type !== "wanted");
+  const wantedListings = listings.filter((listing) => listing.listing_type === "wanted");
+  const organizedListings = [...offerListings, ...wantedListings];
 
   if (isAuthLoading) {
     return (
@@ -337,7 +342,7 @@ export default function AccountPage() {
         <section className="mx-auto max-w-5xl rounded-2xl border border-[#E8E1F0] bg-white p-8 shadow-[0_18px_55px_rgba(51,36,82,0.09)]">
           <div className="flex items-center gap-3 text-[#6E6582]">
             <Loader2 className="animate-spin text-[#7438B7]" size={22} />
-            Ładowanie konta...
+            {t.loadingAccount}
           </div>
         </section>
       </main>
@@ -354,15 +359,15 @@ export default function AccountPage() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F4EEF9] text-[#7438B7]">
             <UserRound size={25} />
           </div>
-          <h1 className="mt-5 text-3xl font-bold">Moje konto</h1>
+          <h1 className="mt-5 text-3xl font-bold">{t.account}</h1>
           <p className="mt-3 text-[#6E6582]">
-            Zaloguj się przez Google, aby zobaczyć i zarządzać swoimi ogłoszeniami.
+            {t.loginIntro}
           </p>
           <button
             onClick={handleLogin}
             className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#7438B7] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.28)] transition hover:bg-[#622CA2]"
           >
-            Zaloguj się
+            {t.login}
           </button>
         </section>
       </main>
@@ -380,7 +385,7 @@ export default function AccountPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#7438B7]">
             Dyeloty
           </p>
-          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Moje konto</h1>
+          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{t.account}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6E6582] sm:text-base">
             Zarządzasz ogłoszeniami jako{" "}
             <span className="font-semibold text-[#332B4D]">
@@ -391,7 +396,7 @@ export default function AccountPage() {
 
           <form onSubmit={handleSaveDisplayName} className="mt-6 max-w-xl">
             <label htmlFor="displayName" className="mb-2 block text-sm font-semibold text-[#514A67]">
-              Nazwa widoczna w aplikacji
+              {t.displayName}
             </label>
             <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
               <input
@@ -421,7 +426,7 @@ export default function AccountPage() {
             className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#6C5A86] transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
           >
             <LogOut size={17} />
-            Wyloguj się
+            {t.logout}
           </button>
         </div>
 
@@ -429,7 +434,7 @@ export default function AccountPage() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold">
-                {isFavoritesSection ? "Ulubione" : "Moje ogłoszenia"}
+                {isFavoritesSection ? t.favorites : t.myListings}
               </h2>
               <p className="mt-1 text-sm text-[#6E6582]">
                 {isFavoritesSection
@@ -438,10 +443,10 @@ export default function AccountPage() {
               </p>
             </div>
             <Link
-              href="/add-listing/pl"
+              href={language === "pl" ? "/add-listing/pl" : "/add-listing/en"}
               className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#F4EEF9] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#EDE2F8]"
             >
-              Dodaj ogłoszenie
+              {t.addListing}
             </Link>
           </div>
 
@@ -455,7 +460,7 @@ export default function AccountPage() {
                   : "text-[#6E6582] hover:bg-white/70 hover:text-[#7438B7]"
               }`}
             >
-              Moje ogłoszenia
+              {t.myListings}
             </button>
             <button
               type="button"
@@ -467,7 +472,7 @@ export default function AccountPage() {
               }`}
             >
               <Heart size={17} />
-              Ulubione
+              {t.favorites}
             </button>
           </div>
 
@@ -481,7 +486,7 @@ export default function AccountPage() {
             isFavoritesLoading ? (
               <div className="mt-6 flex items-center gap-3 rounded-2xl bg-[#FAF8FC] p-5 text-sm text-[#6E6582]">
                 <Loader2 className="animate-spin text-[#7438B7]" size={20} />
-                Ładowanie ulubionych...
+                {t.loadingFavorites}
               </div>
             ) : favoriteListings.length === 0 ? (
               <div className="mt-6 rounded-2xl bg-[#FAF8FC] p-8 text-center">
@@ -548,7 +553,7 @@ export default function AccountPage() {
                           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]"
                         >
                           <Eye size={17} />
-                          Zobacz
+                          {t.view}
                         </Link>
                         <button
                           type="button"
@@ -561,7 +566,7 @@ export default function AccountPage() {
                           ) : (
                             <Heart size={17} />
                           )}
-                          Usuń z ulubionych
+                          {t.removeFavorite}
                         </button>
                       </div>
                     </div>
@@ -572,7 +577,7 @@ export default function AccountPage() {
           ) : isListingsLoading ? (
             <div className="mt-6 flex items-center gap-3 rounded-2xl bg-[#FAF8FC] p-5 text-sm text-[#6E6582]">
               <Loader2 className="animate-spin text-[#7438B7]" size={20} />
-              Ładowanie ogłoszeń...
+              {t.loadingListings}
             </div>
           ) : listings.length === 0 ? (
             <div className="mt-6 rounded-2xl bg-[#FAF8FC] p-8 text-center">
@@ -592,7 +597,11 @@ export default function AccountPage() {
             </div>
           ) : (
             <div className="mt-6 grid gap-4">
-              {listings.map((listing) => (
+              {organizedListings.map((listing, index) => (
+                <div key={listing.id}>
+                  {index === 0 || (listing.listing_type === "wanted" && organizedListings[index - 1]?.listing_type !== "wanted") ? (
+                    <h3 className="pt-4 text-lg font-bold text-[#17142E]">{listing.listing_type === "wanted" ? t.looking : t.offers}</h3>
+                  ) : null}
                 <article
                   key={listing.id}
                   className="rounded-2xl border border-[#E8E1F0] bg-[#FFFEFF] p-4 shadow-[0_10px_28px_rgba(51,36,82,0.06)] sm:p-5"
@@ -633,20 +642,20 @@ export default function AccountPage() {
 
                     <div className="grid gap-2 sm:flex lg:justify-end">
                       <Link
-                        href={`/listing/${listing.id}?from=account`}
+                        href={listing.listing_type === "wanted" ? (language === "pl" ? `/looking` : `/en/looking`) : (language === "pl" ? `/listing/${listing.id}?from=account` : `/en/listing/${listing.id}?from=account`)}
                         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]"
                       >
                         <Eye size={17} />
                         Zobacz
                       </Link>
                       <Link
-                        href={`/edit-listing/${listing.id}`}
+                        href={listing.listing_type === "wanted" ? (language === "pl" ? `/looking/edit/${listing.id}` : `/en/looking/edit/${listing.id}`) : `/edit-listing/${listing.id}`}
                         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]"
                       >
                         <Pencil size={17} />
-                        Edytuj
+                        {t.edit}
                       </Link>
-                      <label className="grid gap-1 text-xs font-semibold text-[#6E6582]">
+                      {listing.listing_type === "wanted" ? <button type="button" onClick={() => void handleUpdateStatus(listing.id, "found")} disabled={updatingStatusId === listing.id} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] disabled:opacity-60">{t.markFound}</button> : <label className="grid gap-1 text-xs font-semibold text-[#6E6582]">
                         Status
                         <select
                           value={normalizeListingStatus(listing.status)}
@@ -659,13 +668,13 @@ export default function AccountPage() {
                           disabled={updatingStatusId === listing.id}
                           className="min-h-11 rounded-xl border border-[#D8CCE7] bg-white px-3 text-sm font-semibold text-[#7438B7] outline-none transition hover:bg-[#F6F0FB] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {LISTING_STATUS_OPTIONS.map((option) => (
+                          {LISTING_STATUS_OPTIONS.filter((option) => option.value !== "found").map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
                           ))}
                         </select>
-                      </label>
+                      </label>}
                       <button
                         type="button"
                         onClick={() => void handleDelete(listing.id)}
@@ -677,11 +686,11 @@ export default function AccountPage() {
                         ) : (
                           <Trash2 size={17} />
                         )}
-                        Usuń
+                        {t.delete}
                       </button>
                     </div>
                   </div>
-                </article>
+                </article></div>
               ))}
             </div>
           )}
@@ -744,3 +753,8 @@ function formatDate(value: string | null) {
     year: "numeric",
   }).format(new Date(value));
 }
+
+const accountCopy = {
+  pl: { account: "Moje konto", login: "Zaloguj się", loginIntro: "Zaloguj się przez Google, aby zobaczyć i zarządzać swoimi ogłoszeniami.", displayName: "Nazwa widoczna w aplikacji", logout: "Wyloguj się", favorites: "Ulubione", myListings: "Moje ogłoszenia", offers: "Moje oferty", looking: "Szukam włóczki", addListing: "Dodaj ogłoszenie", edit: "Edytuj", delete: "Usuń", markFound: "Oznacz jako znalezione", view: "Zobacz", removeFavorite: "Usuń z ulubionych", loadingAccount: "Ładowanie konta...", loadingFavorites: "Ładowanie ulubionych...", loadingListings: "Ładowanie ogłoszeń...", loadListingsError: "Nie udało się pobrać ogłoszeń. Odśwież stronę albo spróbuj ponownie za chwilę.", loadFavoritesError: "Nie udało się pobrać ulubionych. Spróbuj ponownie za chwilę.", logoutError: "Nie udało się wylogować. Spróbuj ponownie.", saveNameError: "Nie udało się zapisać nazwy. Spróbuj ponownie.", nameSaved: "Nazwa została zapisana.", deleteConfirm: "Czy na pewno chcesz usunąć to ogłoszenie?", deleteError: "Nie udało się usunąć ogłoszenia. Spróbuj ponownie.", removeFavoriteError: "Nie udało się usunąć ogłoszenia z ulubionych. Spróbuj ponownie.", statusError: "Nie udało się zmienić statusu ogłoszenia. Spróbuj ponownie." },
+  en: { account: "My account", login: "Sign in", loginIntro: "Sign in with Google to view and manage your listings.", displayName: "Display name", logout: "Sign out", favorites: "Favorites", myListings: "My listings", offers: "My listings", looking: "Looking for yarn", addListing: "Add listing", edit: "Edit", delete: "Delete", markFound: "Mark as found", view: "View", removeFavorite: "Remove from favorites", loadingAccount: "Loading account...", loadingFavorites: "Loading favorites...", loadingListings: "Loading listings...", loadListingsError: "Could not load listings. Refresh the page or try again shortly.", loadFavoritesError: "Could not load favorites. Please try again shortly.", logoutError: "Could not sign out. Please try again.", saveNameError: "Could not save the name. Please try again.", nameSaved: "Name saved.", deleteConfirm: "Are you sure you want to delete this listing?", deleteError: "Could not delete the listing. Please try again.", removeFavoriteError: "Could not remove the favorite. Please try again.", statusError: "Could not update the listing status. Please try again." },
+} as const;

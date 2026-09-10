@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 import { supabase } from "../../supabase";
 import FavoriteButton from "../../FavoriteButton";
 import OwnerListingActions from "../../OwnerListingActions";
+import StartConversationButton from "../../StartConversationButton";
 import {
   getListingStatusClassName,
   getLocalizedListingStatusLabel,
@@ -159,6 +160,7 @@ export async function ListingDetailsPage({
               </div>
 
               <OwnerListingActions listingId={listing.id} ownerId={listing.user_id} language={language} />
+              <StartConversationButton recipientId={listing.user_id} language={language} className="mt-5" />
 
               {normalizedStatus === "sold" ? (
                 <div className="mt-5 rounded-2xl border border-[#E8E1F0] bg-[#FAF8FC] p-4 text-sm leading-6 text-[#6E6582]">

@@ -63,7 +63,7 @@ export default function OwnerListingActions({ listingId, ownerId, language = "pl
           {language === "pl" ? "Edytuj ogłoszenie" : "Edit listing"}
         </Link>
         <Link
-          href="/account"
+          href={language === "pl" ? "/account" : "/en/account"}
           className="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-semibold text-[#7438B7] shadow-sm transition hover:bg-[#F4EEF9]"
         >
           {language === "pl" ? "Moje ogłoszenia" : "My listings"}

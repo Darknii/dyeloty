@@ -1,0 +1,4 @@
+export default function ComingSoon({ language }: { language: "en" | "pl" }) {
+  const t = language === "pl" ? { line1: "Znajdź dokładnie tę partię włóczki, której potrzebujesz.", line2: "Kończymy właśnie pierwszą wersję testową.", line3: "Niedługo zaprosimy pierwsze dziewiarki do środka." } : { line1: "Find the exact dye lot you need.", line2: "We’re finishing the first test version.", line3: "The first knitters will be invited very soon." };
+  return <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#FBF9FF_0%,#F4EFF8_100%)] px-5 text-[#17142E]"><section className="max-w-xl rounded-3xl border border-[#E8E1F0] bg-white p-8 text-center shadow-[0_22px_70px_rgba(51,36,82,0.10)] sm:p-12"><p className="text-3xl font-bold text-[#7438B7]">Dyeloty 🧶</p><h1 className="mt-6 text-2xl font-bold leading-tight sm:text-3xl">{t.line1}</h1><p className="mt-6 text-base leading-7 text-[#6E6582]">{t.line2}<br />{t.line3}</p></section></main>;
+}

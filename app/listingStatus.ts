@@ -1,4 +1,4 @@
-export type ListingStatus = "available" | "reserved" | "sold";
+export type ListingStatus = "available" | "reserved" | "sold" | "found";
 
 export const LISTING_STATUS_OPTIONS: Array<{
   value: ListingStatus;
@@ -7,10 +7,11 @@ export const LISTING_STATUS_OPTIONS: Array<{
   { value: "available", label: "Dostępne" },
   { value: "reserved", label: "Zarezerwowane" },
   { value: "sold", label: "Sprzedane / nieaktualne" },
+  { value: "found", label: "Znaleziono" },
 ];
 
 export function normalizeListingStatus(status: string | null): ListingStatus {
-  if (status === "reserved" || status === "sold") {
+  if (status === "reserved" || status === "sold" || status === "found") {
     return status;
   }
 
@@ -27,7 +28,7 @@ export function getLocalizedListingStatusLabel(
 ) {
   const normalizedStatus = normalizeListingStatus(status);
   if (language === "en") {
-    return ({ available: "Available", reserved: "Reserved", sold: "Sold / inactive" })[
+    return ({ available: "Available", reserved: "Reserved", sold: "Sold / inactive", found: "Found" })[
       normalizedStatus
     ];
   }
@@ -46,6 +47,10 @@ export function getListingStatusClassName(status: string | null) {
 
   if (normalizedStatus === "sold") {
     return "bg-[#EEEAF3] text-[#6E6582]";
+  }
+
+  if (normalizedStatus === "found") {
+    return "bg-[#E8E1F0] text-[#6E6582]";
   }
 
   return "bg-[#DDF7E9] text-[#287A4D]";
