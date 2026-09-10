@@ -13,20 +13,54 @@ type Props = {
 
 export default function Header({ language }: Props) {
   const [session, setSession] = useState<Session | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    let isMounted = true;
+    let currentUserId: string | null = null;
+
+    async function loadUnreadCount(userId: string) {
+      const { count, error } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .is("read_at", null)
+        .neq("sender_id", userId);
+
+      if (!isMounted) return;
+      setUnreadCount(error ? 0 : count ?? 0);
+    }
+
+    function updateSession(nextSession: Session | null) {
+      currentUserId = nextSession?.user?.id ?? null;
+      setSession(nextSession);
+
+      if (currentUserId) {
+        void loadUnreadCount(currentUserId);
+      } else {
+        setUnreadCount(0);
+      }
+    }
+
+    void supabase.auth.getSession().then(({ data: { session } }) => updateSession(session));
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      updateSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    function handleWindowFocus() {
+      if (currentUserId) void loadUnreadCount(currentUserId);
+    }
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+      window.removeEventListener("focus", handleWindowFocus);
+    };
   }, []);
 
   async function handleLogin() {
@@ -75,6 +109,7 @@ export default function Header({ language }: Props) {
   const listingsHref = `${homeHref}#listings`;
   const howItWorksHref = `${homeHref}#how-it-works`;
   const supportHref = "https://suppi.pl/dyeloty";
+  const unreadBadge = unreadCount > 9 ? "9+" : String(unreadCount);
   const accountLabel =
     session?.user?.user_metadata?.display_name ??
     session?.user?.user_metadata?.name ??
@@ -128,14 +163,22 @@ export default function Header({ language }: Props) {
             {language.toUpperCase()}
           </a>
 
-          <a
-            href={favoritesHref}
-            className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"
-          >
-            <Heart size={21} />
-            {t.favorites}
-          </a>
-          <a href={messagesHref} className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"><MessageCircle size={20} />{t.messages}</a>
+          {session?.user ? (
+            <>
+              <a
+                href={favoritesHref}
+                className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"
+              >
+                <Heart size={21} />
+                {t.favorites}
+              </a>
+              <a href={messagesHref} className="relative hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex">
+                <MessageCircle size={20} />
+                {t.messages}
+                {unreadCount > 0 ? <span aria-label={`${unreadCount} unread messages`} className="inline-flex min-w-5 justify-center rounded-full bg-[#7438B7] px-1.5 py-0.5 text-xs leading-none text-white">{unreadBadge}</span> : null}
+              </a>
+            </>
+          ) : null}
 
           {session?.user ? (
             <a
@@ -209,15 +252,23 @@ export default function Header({ language }: Props) {
               {t.about}
             </a>
             <a href={lookingHref} onClick={() => setIsMenuOpen(false)} className="rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]">{t.looking}</a>
-            <a
-              href={favoritesHref}
-              onClick={() => setIsMenuOpen(false)}
-              className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
-            >
-              <Heart size={19} />
-              {t.favorites}
-            </a>
-            <a href={messagesHref} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"><MessageCircle size={19} />{t.messages}</a>
+            {session?.user ? (
+              <>
+                <a
+                  href={favoritesHref}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
+                >
+                  <Heart size={19} />
+                  {t.favorites}
+                </a>
+                <a href={messagesHref} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]">
+                  <MessageCircle size={19} />
+                  {t.messages}
+                  {unreadCount > 0 ? <span aria-label={`${unreadCount} unread messages`} className="inline-flex min-w-5 justify-center rounded-full bg-[#7438B7] px-1.5 py-0.5 text-xs leading-none text-white">{unreadBadge}</span> : null}
+                </a>
+              </>
+            ) : null}
             <a
               href={supportHref}
               target="_blank"

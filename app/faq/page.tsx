@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Header from "../Header";
 import Footer from "../Footer";
 
 export const metadata: Metadata = {
@@ -54,8 +53,6 @@ const faqItems = [
 export default function Page() {
   return (
     <>
-      <Header language="pl" />
-
       <main className="bg-[#F7F4FB] px-4 py-10 text-[#17142E] sm:px-6 sm:py-16">
         <section className="mx-auto max-w-4xl">
           <div className="rounded-[28px] border border-[#E8E1F0] bg-white p-6 shadow-[0_22px_70px_rgba(51,36,82,0.10)] sm:p-10">

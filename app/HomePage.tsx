@@ -1,7 +1,6 @@
 import { BadgeCheck, Hash, Package, Search, Tags } from "lucide-react";
 import Image from "next/image";
 import { Suspense, type ReactNode } from "react";
-import Header from "./Header";
 import Listings, { ListingsLoading } from "./Listings";
 import Footer from "./Footer";
 import { getHomepageListings } from "./listingQueries";
@@ -135,8 +134,6 @@ export default async function HomePage({ language, filters = {} }: Props) {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#F7F4FB] text-[#17142E]">
-      <Header language={language} />
-
       <section className="relative overflow-hidden border-b border-[#ECE5F3] bg-[linear-gradient(105deg,#FBF9FF_0%,#F8F3FC_45%,#F4EFF8_100%)]">
         <div className="mx-auto grid max-w-[1280px] gap-7 px-4 pb-6 pt-8 sm:px-6 sm:pb-8 sm:pt-12 lg:grid-cols-[0.53fr_0.47fr] lg:px-8 lg:pb-0 lg:pt-14">
           <div className="relative z-10 lg:pb-36">

@@ -24,8 +24,13 @@ export default function AuthCallbackPage() {
       try {
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
+        const oauthError = url.searchParams.get("error");
         const requestedPath = url.searchParams.get("next");
         const nextPath = ["/account", "/en/account", "/looking/add", "/en/looking/add"].includes(requestedPath ?? "") ? requestedPath! : "/account";
+
+        if (oauthError) {
+          throw new Error("OAuth provider returned an error.");
+        }
 
         if (!code) {
           throw new Error("Auth callback is missing the OAuth code parameter.");
@@ -38,7 +43,7 @@ export default function AuthCallbackPage() {
         );
 
         if (error) {
-          console.error("Auth callback code exchange failed:", error);
+          console.error("Auth callback code exchange failed.", { message: error.message });
           throw error;
         }
 
