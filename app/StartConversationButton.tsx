@@ -43,7 +43,11 @@ export default function StartConversationButton({ recipientId, language, classNa
       }
     }
     setIsLoading(false);
-    if (error || !conversation) { setMessage(t.error); return; }
+    if (error || !conversation) {
+      console.error("Could not open conversation", { recipientId, error });
+      setMessage(t.error);
+      return;
+    }
     router.push(language === "pl" ? `/messages/${conversation.id}` : `/en/messages/${conversation.id}`);
   }
 

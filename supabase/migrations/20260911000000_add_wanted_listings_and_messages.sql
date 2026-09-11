@@ -50,6 +50,9 @@ create index if not exists messages_unread_recipient_idx
 alter table public.conversations enable row level security;
 alter table public.messages enable row level security;
 
+grant select, insert on public.conversations to authenticated;
+grant select, insert on public.messages to authenticated;
+
 create policy "Participants can read conversations"
   on public.conversations for select to authenticated
   using ((select auth.uid()) in (user_1, user_2));
@@ -98,4 +101,5 @@ as $$
     );
 $$;
 
+revoke execute on function public.mark_conversation_read(uuid) from public;
 grant execute on function public.mark_conversation_read(uuid) to authenticated;
