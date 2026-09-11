@@ -111,6 +111,7 @@ export default function Header({ language }: Props) {
           account: "Konto",
           messages: "Wiadomości",
           looking: "Szukam włóczki",
+          users: "Użytkownicy",
         }
       : {
           listings: "Listings",
@@ -123,6 +124,7 @@ export default function Header({ language }: Props) {
           account: "Account",
           messages: "Messages",
           looking: "Looking for yarn",
+          users: "Knitters",
         };
 
   const homeHref = language === "pl" ? "/" : "/en";
@@ -132,6 +134,7 @@ export default function Header({ language }: Props) {
   const lookingHref = language === "pl" ? "/looking" : "/en/looking";
   const accountHref = language === "pl" ? "/account" : "/en/account";
   const favoritesHref = language === "pl" ? "/account?section=favorites" : "/en/account?section=favorites";
+  const usersHref = language === "pl" ? "/users" : "/en/users";
   const listingsHref = `${homeHref}#listings`;
   const howItWorksHref = `${homeHref}#how-it-works`;
   const supportHref = "https://suppi.pl/dyeloty";
@@ -187,6 +190,12 @@ export default function Header({ language }: Props) {
 
           {session?.user ? (
             <>
+              <a
+                href={usersHref}
+                className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"
+              >
+                {t.users}
+              </a>
               <a
                 href={favoritesHref}
                 className="hidden min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#17142E] transition hover:bg-[#F6F0FB] lg:inline-flex"
@@ -276,6 +285,13 @@ export default function Header({ language }: Props) {
             <a href={lookingHref} onClick={() => setIsMenuOpen(false)} className="rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]">{t.looking}</a>
             {session?.user ? (
               <>
+                <a
+                  href={usersHref}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
+                >
+                  {t.users}
+                </a>
                 <a
                   href={favoritesHref}
                   onClick={() => setIsMenuOpen(false)}
