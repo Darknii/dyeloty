@@ -20,6 +20,7 @@ export default function Header({ language }: Props) {
   useEffect(() => {
     let isMounted = true;
     let currentUserId: string | null = null;
+    let profileRequestId = 0;
 
     async function loadUnreadCount(userId: string) {
       const { count, error } = await supabase
@@ -33,13 +34,14 @@ export default function Header({ language }: Props) {
     }
 
     async function loadProfileUsername(userId: string) {
+      const requestId = ++profileRequestId;
       const { data, error } = await supabase
         .from("profiles")
         .select("username")
         .eq("user_id", userId)
         .maybeSingle<{ username: string }>();
 
-      if (!isMounted) return;
+      if (!isMounted || requestId !== profileRequestId || currentUserId !== userId) return;
       setProfileUsername(error ? null : data?.username ?? null);
     }
 
@@ -51,6 +53,7 @@ export default function Header({ language }: Props) {
         void loadUnreadCount(currentUserId);
         void loadProfileUsername(currentUserId);
       } else {
+        profileRequestId += 1;
         setUnreadCount(0);
         setProfileUsername(null);
       }

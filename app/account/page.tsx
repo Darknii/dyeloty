@@ -321,9 +321,9 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
     setPublicProfile(data);
     setUsername(data.username);
     setAvatarFile(null);
-    setAvatarPreviewUrl(await getProfileAvatarUrl(data.avatar_url));
     setIsEditingProfile(false);
     window.dispatchEvent(new Event("dyeloty-profile-updated"));
+    setAvatarPreviewUrl(await getProfileAvatarUrl(data.avatar_url));
     setPublicProfileMessage(profileT.saved);
   }
 
