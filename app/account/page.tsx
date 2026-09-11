@@ -1,7 +1,8 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- signed avatar URLs are user-provided Storage objects */
 
 import { useCallback, useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -19,6 +20,14 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 import { getAuthCallbackRedirectTo } from "../authRedirect";
 import { removeListingImageFromStorage } from "../listingImages";
+import AccountProjects from "../AccountProjects";
+import {
+  getProfileAvatarUrl,
+  isProfileAvatarFile,
+  PROFILE_AVATAR_TYPES,
+  removeProfileAvatar,
+  uploadProfileAvatar,
+} from "../profileAvatars";
 import {
   LISTING_STATUS_OPTIONS,
   getListingStatusClassName,
@@ -49,6 +58,7 @@ type PublicProfile = {
   user_id: string;
   username: string;
   avatar_url: string | null;
+  bio: string | null;
 };
 
 type AccountSection = "listings" | "favorites";
@@ -56,8 +66,8 @@ type AccountSection = "listings" | "favorites";
 export default function AccountPage({ language = "pl" }: { language?: "en" | "pl" }) {
   const t = language === "pl" ? accountCopy.pl : accountCopy.en;
   const profileT = language === "pl"
-    ? { title: "Mój publiczny profil", intro: "Ustaw nick, aby inne zalogowane osoby mogły znaleźć Twój profil.", username: "Nick", avatar: "Adres avatara (opcjonalnie)", save: "Zapisz profil", view: "Zobacz mój profil", format: "Użyj 3–30 małych liter, cyfr lub _.", invalid: "Nick musi mieć 3–30 małych liter, cyfr lub _.", taken: "Ten nick jest już zajęty.", error: "Nie udało się zapisać profilu.", saved: "Profil został zapisany." }
-    : { title: "My public profile", intro: "Set a username so other signed-in users can find your profile.", username: "Username", avatar: "Avatar URL (optional)", save: "Save profile", view: "View my profile", format: "Use 3–30 lowercase letters, numbers, or _.", invalid: "Username must use 3–30 lowercase letters, numbers, or _.", taken: "This username is already taken.", error: "Could not save the profile.", saved: "Profile saved." };
+    ? { title: "Twój profil", intro: "Ta nazwa jest widoczna w aplikacji, wyszukiwarce i adresie Twojego profilu.", username: "Nazwa użytkownika", bio: "O mnie", addPhoto: "Dodaj zdjęcie", changePhoto: "Zmień zdjęcie", save: "Zapisz profil", view: "Zobacz mój profil", format: "3–30 znaków: małe lub duże litery, cyfry albo _.", invalid: "Nazwa użytkownika musi mieć 3–30 znaków i zawierać tylko litery, cyfry albo _.", taken: "Ta nazwa użytkownika jest już zajęta.", error: "Nie udało się zapisać profilu.", saved: "Profil został zapisany.", imageError: "Wybierz plik JPG, PNG lub WebP o rozmiarze do 2 MB.", uploadError: "Nie udało się przesłać zdjęcia." }
+    : { title: "Your profile", intro: "This name appears in the app, search, and your profile URL.", username: "Username", bio: "About me", addPhoto: "Add photo", changePhoto: "Change photo", save: "Save profile", view: "View my profile", format: "3–30 characters: uppercase or lowercase letters, numbers, or _.", invalid: "Username must be 3–30 characters and contain only letters, numbers, or _.", taken: "This username is already taken.", error: "Could not save the profile.", saved: "Profile saved.", imageError: "Choose a JPG, PNG, or WebP file up to 2 MB.", uploadError: "Could not upload the photo." };
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<AccountSection>(() =>
@@ -71,14 +81,19 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
   const [removingFavoriteId, setRemovingFavoriteId] = useState<number | null>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [isSavingName, setIsSavingName] = useState(false);
-  const [profileMessage, setProfileMessage] = useState("");
   const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
   const [username, setUsername] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSavingPublicProfile, setIsSavingPublicProfile] = useState(false);
   const [publicProfileMessage, setPublicProfileMessage] = useState("");
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl?.startsWith("blob:")) URL.revokeObjectURL(avatarPreviewUrl);
+    };
+  }, [avatarPreviewUrl]);
 
   const loadListings = useCallback(async (userId: string) => {
     setIsListingsLoading(true);
@@ -156,19 +171,19 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
   const loadPublicProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("user_id, username, avatar_url")
+      .select("user_id, username, avatar_url, bio")
       .eq("user_id", userId)
       .maybeSingle<PublicProfile>();
 
     setPublicProfile(data ?? null);
     setUsername(data?.username ?? "");
-    setAvatarUrl(data?.avatar_url ?? "");
+    setBio(data?.bio ?? "");
+    setAvatarPreviewUrl(await getProfileAvatarUrl(data?.avatar_url));
   }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setDisplayName(getSessionDisplayName(session));
       setIsAuthLoading(false);
 
       if (session?.user) {
@@ -182,8 +197,6 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      setDisplayName(getSessionDisplayName(session));
-
       if (session?.user) {
         void loadListings(session.user.id);
         void loadFavorites(session.user.id);
@@ -193,7 +206,9 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
         setFavoriteListings([]);
         setPublicProfile(null);
         setUsername("");
-        setAvatarUrl("");
+        setBio("");
+        setAvatarPreviewUrl(null);
+        setAvatarFile(null);
       }
     });
 
@@ -213,7 +228,8 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
     setActiveSection(section);
 
     if (typeof window !== "undefined") {
-      const url = section === "favorites" ? "/account?section=favorites" : "/account";
+      const basePath = language === "pl" ? "/account" : "/en/account";
+      const url = section === "favorites" ? `${basePath}?section=favorites` : basePath;
       window.history.replaceState(null, "", url);
     }
   }
@@ -233,71 +249,69 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
     window.location.href = "/";
   }
 
-  async function handleSaveDisplayName(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    setIsSavingName(true);
-    setProfileMessage("");
-
-    const { data, error } = await supabase.auth.updateUser({
-      data: {
-        display_name: displayName.trim(),
-      },
-    });
-
-    setIsSavingName(false);
-
-    if (error) {
-      console.error("Could not save display name", error);
-      setProfileMessage(t.saveNameError);
-      return;
-    }
-
-    setSession((currentSession) =>
-      currentSession && data.user
-        ? {
-            ...currentSession,
-            user: data.user,
-          }
-        : currentSession,
-    );
-    setProfileMessage(t.nameSaved);
-  }
-
   async function handleSavePublicProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!session?.user) return;
 
-    const normalizedUsername = username.trim().toLowerCase();
-    if (!/^[a-z0-9_]{3,30}$/.test(normalizedUsername)) {
+    const normalizedUsername = username.trim();
+    if (!/^[A-Za-z0-9_]{3,30}$/.test(normalizedUsername)) {
       setPublicProfileMessage(profileT.invalid);
-      return;
-    }
-
-    const normalizedAvatarUrl = avatarUrl.trim() || null;
-    if (normalizedAvatarUrl && !/^https?:\/\//.test(normalizedAvatarUrl)) {
-      setPublicProfileMessage(profileT.error);
       return;
     }
 
     setIsSavingPublicProfile(true);
     setPublicProfileMessage("");
+    let avatarPath = publicProfile?.avatar_url ?? null;
+
+    if (avatarFile) {
+      const uploadResult = await uploadProfileAvatar(session.user.id, avatarFile);
+      if (uploadResult.error || !uploadResult.path) {
+        console.error("Could not upload profile avatar", uploadResult.error);
+        setIsSavingPublicProfile(false);
+        setPublicProfileMessage(profileT.uploadError);
+        return;
+      }
+      avatarPath = uploadResult.path;
+    }
+
     const { data, error } = await supabase
       .from("profiles")
-      .upsert({ user_id: session.user.id, username: normalizedUsername, avatar_url: normalizedAvatarUrl }, { onConflict: "user_id" })
-      .select("user_id, username, avatar_url")
+      .upsert({ user_id: session.user.id, username: normalizedUsername, avatar_url: avatarPath, bio: bio.trim() || null }, { onConflict: "user_id" })
+      .select("user_id, username, avatar_url, bio")
       .single<PublicProfile>();
     setIsSavingPublicProfile(false);
 
     if (error || !data) {
+      if (avatarFile && avatarPath) await removeProfileAvatar(avatarPath, session.user.id);
       setPublicProfileMessage(error?.code === "23505" ? profileT.taken : profileT.error);
       return;
     }
 
+    if (avatarFile && publicProfile?.avatar_url && publicProfile.avatar_url !== avatarPath) {
+      const cleanupError = await removeProfileAvatar(publicProfile.avatar_url, session.user.id);
+      if (cleanupError) console.warn("Profile was updated, but old avatar cleanup failed", cleanupError);
+    }
+
     setPublicProfile(data);
     setUsername(data.username);
-    setAvatarUrl(data.avatar_url ?? "");
+    setAvatarFile(null);
+    setAvatarPreviewUrl(await getProfileAvatarUrl(data.avatar_url));
     setPublicProfileMessage(profileT.saved);
+  }
+
+  function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = "";
+    if (!file) return;
+
+    if (!isProfileAvatarFile(file)) {
+      setPublicProfileMessage(profileT.imageError);
+      return;
+    }
+
+    setAvatarFile(file);
+    setAvatarPreviewUrl(URL.createObjectURL(file));
+    setPublicProfileMessage("");
   }
 
   async function handleDelete(listingId: number) {
@@ -404,7 +418,7 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
     return (
       <main className="min-h-screen bg-[#F7F4FB] px-4 py-12 text-[#17142E]">
         <div className="mx-auto mb-5 max-w-5xl">
-          <BackHomeLink />
+          <BackHomeLink language={language} />
         </div>
         <section className="mx-auto max-w-5xl rounded-2xl border border-[#E8E1F0] bg-white p-8 shadow-[0_18px_55px_rgba(51,36,82,0.09)]">
           <div className="flex items-center gap-3 text-[#6E6582]">
@@ -420,7 +434,7 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
     return (
       <main className="min-h-screen bg-[#F7F4FB] px-4 py-12 text-[#17142E]">
         <div className="mx-auto mb-5 max-w-2xl">
-          <BackHomeLink />
+          <BackHomeLink language={language} />
         </div>
         <section className="mx-auto max-w-2xl rounded-2xl border border-[#E8E1F0] bg-white p-8 text-center shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-10">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#F4EEF9] text-[#7438B7]">
@@ -445,7 +459,7 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
     <main className="min-h-screen bg-[#F7F4FB] px-4 py-8 text-[#17142E] sm:px-6 sm:py-12">
       <section className="mx-auto max-w-6xl">
         <div className="mb-5">
-          <BackHomeLink />
+          <BackHomeLink language={language} />
         </div>
 
         <div className="rounded-2xl border border-[#E8E1F0] bg-white p-6 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-8">
@@ -454,65 +468,27 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
           </p>
           <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{t.account}</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6E6582] sm:text-base">
-            Zarządzasz ogłoszeniami jako{" "}
-            <span className="font-semibold text-[#332B4D]">
-              {displayName || session.user.email || "zalogowany użytkownik"}
-            </span>
-            .
+            {profileT.intro}
           </p>
-
-          <form onSubmit={handleSaveDisplayName} className="mt-6 max-w-xl">
-            <label htmlFor="displayName" className="mb-2 block text-sm font-semibold text-[#514A67]">
-              {t.displayName}
-            </label>
-            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-              <input
-                id="displayName"
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                placeholder="np. Kasia z Krakowa"
-                className="min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition placeholder:text-[#9489AA] focus:border-[#A875D2]"
-              />
-              <button
-                type="submit"
-                disabled={isSavingName}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#F4EEF9] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#EDE2F8] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSavingName ? <Loader2 className="animate-spin" size={17} /> : null}
-                Zapisz
-              </button>
-            </div>
-            {profileMessage ? (
-              <p className="mt-2 text-sm text-[#6E6582]">{profileMessage}</p>
-            ) : null}
-          </form>
 
           <form onSubmit={handleSavePublicProfile} className="mt-6 max-w-xl rounded-2xl bg-[#FAF8FC] p-5">
             <h2 className="text-lg font-bold">{profileT.title}</h2>
-            <p className="mt-1 text-sm leading-6 text-[#6E6582]">{profileT.intro}</p>
-            <label htmlFor="username" className="mt-4 block text-sm font-semibold text-[#514A67]">
+            <div className="mt-5 flex flex-wrap items-center gap-4">
+              {avatarPreviewUrl ? <img src={avatarPreviewUrl} alt="" className="h-20 w-20 rounded-full object-cover" /> : <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-[#7438B7]"><UserRound size={32} /></span>}
+              <label htmlFor="profileAvatar" className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[#D8CCE7] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]">
+                {publicProfile?.avatar_url ? profileT.changePhoto : profileT.addPhoto}
+                <input id="profileAvatar" type="file" accept={PROFILE_AVATAR_TYPES.join(",")} onChange={handleAvatarChange} className="sr-only" />
+              </label>
+            </div>
+            <label htmlFor="username" className="mt-5 block text-sm font-semibold text-[#514A67]">
               {profileT.username}
-              <input
-                id="username"
-                value={username}
-                onChange={(event) => setUsername(event.target.value.toLowerCase())}
-                maxLength={30}
-                autoCapitalize="none"
-                autoCorrect="off"
-                className="mt-2 min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition focus:border-[#A875D2]"
-              />
+              <input id="username" value={username} onChange={(event) => setUsername(event.target.value)} maxLength={30} autoCapitalize="none" autoCorrect="off" className="mt-2 min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition focus:border-[#A875D2]" />
             </label>
             <p className="mt-1 text-xs text-[#8A7A9D]">{profileT.format}</p>
-            <label htmlFor="avatarUrl" className="mt-4 block text-sm font-semibold text-[#514A67]">
-              {profileT.avatar}
-              <input
-                id="avatarUrl"
-                type="url"
-                value={avatarUrl}
-                onChange={(event) => setAvatarUrl(event.target.value)}
-                placeholder="https://…"
-                className="mt-2 min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E] outline-none transition focus:border-[#A875D2]"
-              />
+            <label htmlFor="bio" className="mt-5 block text-sm font-semibold text-[#514A67]">
+              {profileT.bio}
+              <textarea id="bio" value={bio} maxLength={300} onChange={(event) => setBio(event.target.value)} className="mt-2 min-h-24 w-full rounded-xl border border-[#DED6EA] bg-white p-4 text-sm text-[#17142E] outline-none transition focus:border-[#A875D2]" />
+              <span className="mt-1 block text-right text-xs font-normal text-[#8A7A9D]">{bio.length}/300</span>
             </label>
             <div className="mt-4 flex flex-wrap gap-3">
               <button
@@ -553,16 +529,14 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
               </h2>
               <p className="mt-1 text-sm text-[#6E6582]">
                 {isFavoritesSection
-                  ? "Ogłoszenia zapisane przez Ciebie na później."
-                  : "Widzisz tylko ogłoszenia przypisane do Twojego konta."}
+                  ? t.favoritesIntro
+                  : t.listingsIntro}
               </p>
             </div>
-            <Link
-              href={language === "pl" ? "/add-listing/pl" : "/add-listing/en"}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#F4EEF9] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#EDE2F8]"
-            >
-              {t.addListing}
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link href={language === "pl" ? "/messages" : "/en/messages"} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D8CCE7] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]">{t.messages}</Link>
+              <Link href={language === "pl" ? "/add-listing/pl" : "/add-listing/en"} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#F4EEF9] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#EDE2F8]">{t.addListing}</Link>
+            </div>
           </div>
 
           <div className="mt-5 grid gap-2 rounded-2xl bg-[#FAF8FC] p-1 sm:inline-grid sm:grid-cols-2">
@@ -609,16 +583,16 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
                   <Heart size={24} />
                 </div>
                 <h3 className="mt-4 text-lg font-semibold">
-                  Nie masz jeszcze ulubionych ogłoszeń.
+                  {t.noFavorites}
                 </h3>
                 <p className="mt-2 text-sm text-[#6E6582]">
-                  Gdy zapiszesz ogłoszenie serduszkiem, wrócisz do niego tutaj bez szukania od nowa.
+                  {t.noFavoritesIntro}
                 </p>
                 <Link
-                  href="/#listings"
+                  href={language === "pl" ? "/#listings" : "/en#listings"}
                   className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#7438B7] px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.24)] transition hover:bg-[#622CA2]"
                 >
-                  Przejdź do ogłoszeń
+                  {t.browseListings}
                 </Link>
               </div>
             ) : (
@@ -647,24 +621,24 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
                         </p>
 
                         <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                          <AccountFact label="Kolor" value={listing.color} />
-                          <AccountFact label="Dye lot" value={listing.dyelot} />
+                          <AccountFact label={t.color} value={listing.color} />
+                          <AccountFact label={t.dyelot} value={listing.dyelot} />
                           <AccountFact
-                            label="Motki"
+                            label={t.skeins}
                             value={listing.skeins === null ? null : String(listing.skeins)}
                           />
-                          <AccountFact label="Lokalizacja" value={listing.country} />
+                          <AccountFact label={t.location} value={listing.country} />
                         </dl>
 
                         <div className="mt-4 flex items-center gap-2 text-xs font-medium text-[#6E6582]">
                           <CalendarDays size={15} className="text-[#7438B7]" />
-                          Dodane {formatDate(listing.created_at)}
+                          {t.added} {formatDate(listing.created_at, language)}
                         </div>
                       </div>
 
                       <div className="grid gap-2 sm:flex lg:justify-end">
                         <Link
-                          href={`/listing/${listing.id}?from=account`}
+                          href={language === "pl" ? `/listing/${listing.id}?from=account` : `/en/listing/${listing.id}?from=account`}
                           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]"
                         >
                           <Eye size={17} />
@@ -699,15 +673,15 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#7438B7] shadow-sm">
                 <Package size={24} />
               </div>
-              <h3 className="mt-4 text-lg font-semibold">Nie masz jeszcze ogłoszeń.</h3>
+              <h3 className="mt-4 text-lg font-semibold">{t.noListings}</h3>
               <p className="mt-2 text-sm text-[#6E6582]">
-                Dodaj pierwszą włóczkę, żeby inni mogli znaleźć pasującą partię.
+                {t.noListingsIntro}
               </p>
               <Link
-                href="/add-listing/pl"
+                href={language === "pl" ? "/add-listing/pl" : "/add-listing/en"}
                 className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#7438B7] px-5 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(116,56,183,0.24)] transition hover:bg-[#622CA2]"
               >
-                Dodaj pierwsze ogłoszenie
+                {t.addFirstListing}
               </Link>
             </div>
           ) : (
@@ -740,18 +714,18 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
                       </p>
 
                       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                        <AccountFact label="Kolor" value={listing.color} />
-                        <AccountFact label="Dye lot" value={listing.dyelot} />
+                        <AccountFact label={t.color} value={listing.color} />
+                        <AccountFact label={t.dyelot} value={listing.dyelot} />
                         <AccountFact
-                          label="Motki"
+                          label={t.skeins}
                           value={listing.skeins === null ? null : String(listing.skeins)}
                         />
-                        <AccountFact label="Lokalizacja" value={listing.country} />
+                        <AccountFact label={t.location} value={listing.country} />
                       </dl>
 
                       <div className="mt-4 flex items-center gap-2 text-xs font-medium text-[#6E6582]">
                         <CalendarDays size={15} className="text-[#7438B7]" />
-                        Dodane {formatDate(listing.created_at)}
+                        {t.added} {formatDate(listing.created_at, language)}
                       </div>
                     </div>
 
@@ -761,7 +735,7 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
                         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]"
                       >
                         <Eye size={17} />
-                        Zobacz
+                        {t.view}
                       </Link>
                       <Link
                         href={listing.listing_type === "wanted" ? (language === "pl" ? `/looking/edit/${listing.id}` : `/en/looking/edit/${listing.id}`) : `/edit-listing/${listing.id}`}
@@ -771,7 +745,7 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
                         {t.edit}
                       </Link>
                       {listing.listing_type === "wanted" ? <button type="button" onClick={() => void handleUpdateStatus(listing.id, "found")} disabled={updatingStatusId === listing.id} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7] disabled:opacity-60">{t.markFound}</button> : <label className="grid gap-1 text-xs font-semibold text-[#6E6582]">
-                        Status
+                        {t.status}
                         <select
                           value={normalizeListingStatus(listing.status)}
                           onChange={(event) =>
@@ -810,19 +784,20 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
             </div>
           )}
         </div>
+        <AccountProjects userId={session.user.id} language={language} />
       </section>
     </main>
   );
 }
 
-function BackHomeLink() {
+function BackHomeLink({ language }: { language: "en" | "pl" }) {
   return (
     <Link
-      href="/"
+      href={language === "pl" ? "/" : "/en"}
       className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-[#6C5A86] shadow-[0_10px_28px_rgba(51,36,82,0.07)] transition hover:text-[#7438B7]"
     >
       <ArrowLeft size={17} />
-      Wróć do strony głównej
+      {language === "pl" ? "Wróć do strony głównej" : "Back to home"}
     </Link>
   );
 }
@@ -838,15 +813,6 @@ function AccountFact({ label, value }: { label: string; value: string | null }) 
   );
 }
 
-function getSessionDisplayName(session: Session | null) {
-  const value =
-    session?.user?.user_metadata?.display_name ??
-    session?.user?.user_metadata?.name ??
-    "";
-
-  return typeof value === "string" ? value : "";
-}
-
 function getInitialAccountSection(): AccountSection {
   if (typeof window === "undefined") {
     return "listings";
@@ -857,12 +823,12 @@ function getInitialAccountSection(): AccountSection {
     : "listings";
 }
 
-function formatDate(value: string | null) {
+function formatDate(value: string | null, language: "en" | "pl") {
   if (!value) {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("pl-PL", {
+  return new Intl.DateTimeFormat(language === "pl" ? "pl-PL" : "en-GB", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -870,6 +836,6 @@ function formatDate(value: string | null) {
 }
 
 const accountCopy = {
-  pl: { account: "Moje konto", login: "Zaloguj się", loginIntro: "Zaloguj się przez Google, aby zobaczyć i zarządzać swoimi ogłoszeniami.", displayName: "Nazwa widoczna w aplikacji", logout: "Wyloguj się", favorites: "Ulubione", myListings: "Moje ogłoszenia", offers: "Moje oferty", looking: "Szukam włóczki", addListing: "Dodaj ogłoszenie", edit: "Edytuj", delete: "Usuń", markFound: "Oznacz jako znalezione", view: "Zobacz", removeFavorite: "Usuń z ulubionych", loadingAccount: "Ładowanie konta...", loadingFavorites: "Ładowanie ulubionych...", loadingListings: "Ładowanie ogłoszeń...", loadListingsError: "Nie udało się pobrać ogłoszeń. Odśwież stronę albo spróbuj ponownie za chwilę.", loadFavoritesError: "Nie udało się pobrać ulubionych. Spróbuj ponownie za chwilę.", logoutError: "Nie udało się wylogować. Spróbuj ponownie.", saveNameError: "Nie udało się zapisać nazwy. Spróbuj ponownie.", nameSaved: "Nazwa została zapisana.", deleteConfirm: "Czy na pewno chcesz usunąć to ogłoszenie?", deleteError: "Nie udało się usunąć ogłoszenia. Spróbuj ponownie.", removeFavoriteError: "Nie udało się usunąć ogłoszenia z ulubionych. Spróbuj ponownie.", statusError: "Nie udało się zmienić statusu ogłoszenia. Spróbuj ponownie." },
-  en: { account: "My account", login: "Sign in", loginIntro: "Sign in with Google to view and manage your listings.", displayName: "Display name", logout: "Sign out", favorites: "Favorites", myListings: "My listings", offers: "My listings", looking: "Looking for yarn", addListing: "Add listing", edit: "Edit", delete: "Delete", markFound: "Mark as found", view: "View", removeFavorite: "Remove from favorites", loadingAccount: "Loading account...", loadingFavorites: "Loading favorites...", loadingListings: "Loading listings...", loadListingsError: "Could not load listings. Refresh the page or try again shortly.", loadFavoritesError: "Could not load favorites. Please try again shortly.", logoutError: "Could not sign out. Please try again.", saveNameError: "Could not save the name. Please try again.", nameSaved: "Name saved.", deleteConfirm: "Are you sure you want to delete this listing?", deleteError: "Could not delete the listing. Please try again.", removeFavoriteError: "Could not remove the favorite. Please try again.", statusError: "Could not update the listing status. Please try again." },
+  pl: { account: "Moje konto", login: "Zaloguj się", loginIntro: "Zaloguj się przez Google, aby zobaczyć i zarządzać swoimi ogłoszeniami.", logout: "Wyloguj się", favorites: "Ulubione", favoritesIntro: "Ogłoszenia zapisane przez Ciebie na później.", noFavorites: "Nie masz jeszcze ulubionych ogłoszeń.", noFavoritesIntro: "Gdy zapiszesz ogłoszenie serduszkiem, wrócisz do niego tutaj bez szukania od nowa.", browseListings: "Przejdź do ogłoszeń", messages: "Wiadomości", myListings: "Moje ogłoszenia", listingsIntro: "Widzisz tylko ogłoszenia przypisane do Twojego konta.", noListings: "Nie masz jeszcze ogłoszeń.", noListingsIntro: "Dodaj pierwszą włóczkę, żeby inni mogli znaleźć pasującą partię.", addFirstListing: "Dodaj pierwsze ogłoszenie", offers: "Moje oferty", looking: "Szukam włóczki", addListing: "Dodaj ogłoszenie", edit: "Edytuj", delete: "Usuń", markFound: "Oznacz jako znalezione", view: "Zobacz", status: "Status", color: "Kolor", dyelot: "Dye lot", skeins: "Motki", location: "Lokalizacja", added: "Dodane", removeFavorite: "Usuń z ulubionych", loadingAccount: "Ładowanie konta...", loadingFavorites: "Ładowanie ulubionych...", loadingListings: "Ładowanie ogłoszeń...", loadListingsError: "Nie udało się pobrać ogłoszeń. Odśwież stronę albo spróbuj ponownie za chwilę.", loadFavoritesError: "Nie udało się pobrać ulubionych. Spróbuj ponownie za chwilę.", logoutError: "Nie udało się wylogować. Spróbuj ponownie.", deleteConfirm: "Czy na pewno chcesz usunąć to ogłoszenie?", deleteError: "Nie udało się usunąć ogłoszenia. Spróbuj ponownie.", removeFavoriteError: "Nie udało się usunąć ogłoszenia z ulubionych. Spróbuj ponownie.", statusError: "Nie udało się zmienić statusu ogłoszenia. Spróbuj ponownie." },
+  en: { account: "My account", login: "Sign in", loginIntro: "Sign in with Google to view and manage your listings.", logout: "Sign out", favorites: "Favorites", favoritesIntro: "Listings you saved for later.", noFavorites: "You do not have any favorite listings yet.", noFavoritesIntro: "Save a listing with the heart icon and it will be easy to find here.", browseListings: "Browse listings", messages: "Messages", myListings: "My listings", listingsIntro: "Only listings connected to your account are shown here.", noListings: "You do not have any listings yet.", noListingsIntro: "Add your first yarn listing so others can find a matching dye lot.", addFirstListing: "Add your first listing", offers: "My listings", looking: "Looking for yarn", addListing: "Add listing", edit: "Edit", delete: "Delete", markFound: "Mark as found", view: "View", status: "Status", color: "Color", dyelot: "Dye lot", skeins: "Skeins", location: "Location", added: "Added", removeFavorite: "Remove from favorites", loadingAccount: "Loading account...", loadingFavorites: "Loading favorites...", loadingListings: "Loading listings...", loadListingsError: "Could not load listings. Refresh the page or try again shortly.", loadFavoritesError: "Could not load favorites. Please try again shortly.", logoutError: "Could not sign out. Please try again.", deleteConfirm: "Are you sure you want to delete this listing?", deleteError: "Could not delete the listing. Please try again.", removeFavoriteError: "Could not remove the favorite. Please try again.", statusError: "Could not update the listing status. Please try again." },
 } as const;
