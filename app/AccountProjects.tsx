@@ -11,7 +11,7 @@ type Project = { id: number; slot: number; title: string; description: string | 
 type FormProject = { id: number | null; slot: number | null; image_url: string | null };
 const blankProject: FormProject = { id: null, slot: null, image_url: null };
 
-export default function AccountProjects({ userId, language }: { userId: string; language: "en" | "pl" }) {
+export default function AccountProjects({ userId, language, onCountChange }: { userId: string; language: "en" | "pl"; onCountChange?: (count: number) => void }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<FormProject | null>(null);
@@ -34,7 +34,8 @@ export default function AccountProjects({ userId, language }: { userId: string; 
     setLoading(false);
     if (error) { setMessage(t.error); return; }
     setProjects(data ?? []);
-  }, [t.error, userId]);
+    onCountChange?.((data ?? []).length);
+  }, [onCountChange, t.error, userId]);
 
   useEffect(() => { const timeoutId = window.setTimeout(() => { void loadProjects(); }, 0); return () => window.clearTimeout(timeoutId); }, [loadProjects]);
   useEffect(() => () => { if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl); }, [previewUrl]);

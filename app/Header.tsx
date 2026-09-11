@@ -13,6 +13,7 @@ type Props = {
 
 export default function Header({ language }: Props) {
   const [session, setSession] = useState<Session | null>(null);
+  const [profileUsername, setProfileUsername] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -31,14 +32,27 @@ export default function Header({ language }: Props) {
       setUnreadCount(error ? 0 : count ?? 0);
     }
 
+    async function loadProfileUsername(userId: string) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("user_id", userId)
+        .maybeSingle<{ username: string }>();
+
+      if (!isMounted) return;
+      setProfileUsername(error ? null : data?.username ?? null);
+    }
+
     function updateSession(nextSession: Session | null) {
       currentUserId = nextSession?.user?.id ?? null;
       setSession(nextSession);
 
       if (currentUserId) {
         void loadUnreadCount(currentUserId);
+        void loadProfileUsername(currentUserId);
       } else {
         setUnreadCount(0);
+        setProfileUsername(null);
       }
     }
 
@@ -51,15 +65,24 @@ export default function Header({ language }: Props) {
     });
 
     function handleWindowFocus() {
-      if (currentUserId) void loadUnreadCount(currentUserId);
+      if (currentUserId) {
+        void loadUnreadCount(currentUserId);
+        void loadProfileUsername(currentUserId);
+      }
+    }
+
+    function handleProfileUpdated() {
+      if (currentUserId) void loadProfileUsername(currentUserId);
     }
 
     window.addEventListener("focus", handleWindowFocus);
+    window.addEventListener("dyeloty-profile-updated", handleProfileUpdated);
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
       window.removeEventListener("focus", handleWindowFocus);
+      window.removeEventListener("dyeloty-profile-updated", handleProfileUpdated);
     };
   }, []);
 
@@ -110,11 +133,7 @@ export default function Header({ language }: Props) {
   const howItWorksHref = `${homeHref}#how-it-works`;
   const supportHref = "https://suppi.pl/dyeloty";
   const unreadBadge = unreadCount > 9 ? "9+" : String(unreadCount);
-  const accountLabel =
-    session?.user?.user_metadata?.display_name ??
-    session?.user?.user_metadata?.name ??
-    session?.user?.email ??
-    t.login;
+  const accountLabel = profileUsername ?? t.account;
 
   return (
     <header className="relative border-b border-[#E8E2EE] bg-white">
@@ -285,7 +304,7 @@ export default function Header({ language }: Props) {
                 className="flex items-center gap-2 rounded-xl px-3 py-3 transition hover:bg-[#F6F0FB] hover:text-[#7438B7]"
               >
                 <UserRound size={19} />
-                <span className="truncate">{t.account}</span>
+                <span className="truncate">{accountLabel}</span>
               </a>
             ) : (
               <button

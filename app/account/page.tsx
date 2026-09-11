@@ -29,6 +29,14 @@ import {
   uploadProfileAvatar,
 } from "../profileAvatars";
 import {
+  PROFILE_FIBRE_OPTIONS,
+  PROFILE_PREFERENCE_OPTIONS,
+  PROFILE_VIBE_OPTIONS,
+  profileOptionLabels,
+  toggleProfileOption,
+  type ProfileDetails,
+} from "../profileDetails";
+import {
   LISTING_STATUS_OPTIONS,
   getListingStatusClassName,
   getListingStatusLabel,
@@ -54,7 +62,7 @@ type FavoriteRow = {
   listing_id: number | string | null;
 };
 
-type PublicProfile = {
+type PublicProfile = ProfileDetails & {
   user_id: string;
   username: string;
   avatar_url: string | null;
@@ -66,8 +74,8 @@ type AccountSection = "listings" | "favorites";
 export default function AccountPage({ language = "pl" }: { language?: "en" | "pl" }) {
   const t = language === "pl" ? accountCopy.pl : accountCopy.en;
   const profileT = language === "pl"
-    ? { title: "Twój profil", intro: "Ta nazwa jest widoczna w aplikacji, wyszukiwarce i adresie Twojego profilu.", username: "Nazwa użytkownika", bio: "O mnie", addPhoto: "Dodaj zdjęcie", changePhoto: "Zmień zdjęcie", save: "Zapisz profil", view: "Zobacz mój profil", format: "3–30 znaków: małe lub duże litery, cyfry albo _.", invalid: "Nazwa użytkownika musi mieć 3–30 znaków i zawierać tylko litery, cyfry albo _.", taken: "Ta nazwa użytkownika jest już zajęta.", error: "Nie udało się zapisać profilu.", saved: "Profil został zapisany.", imageError: "Wybierz plik JPG, PNG lub WebP o rozmiarze do 2 MB.", uploadError: "Nie udało się przesłać zdjęcia." }
-    : { title: "Your profile", intro: "This name appears in the app, search, and your profile URL.", username: "Username", bio: "About me", addPhoto: "Add photo", changePhoto: "Change photo", save: "Save profile", view: "View my profile", format: "3–30 characters: uppercase or lowercase letters, numbers, or _.", invalid: "Username must be 3–30 characters and contain only letters, numbers, or _.", taken: "This username is already taken.", error: "Could not save the profile.", saved: "Profile saved.", imageError: "Choose a JPG, PNG, or WebP file up to 2 MB.", uploadError: "Could not upload the photo." };
+    ? { title: "Moja przestrzeń", intro: "Twój dziewiarski profil w Dyelotach.", username: "Nazwa użytkownika", bio: "O mnie", preferences: "Najchętniej dziergam", fibres: "Ulubione włókna", since: "Dziergam od", vibes: "Dziewiarski vibe", edit: "Edytuj profil", closeEdit: "Zamknij edycję", addPhoto: "Dodaj zdjęcie", changePhoto: "Zmień zdjęcie", save: "Zapisz", view: "Zobacz mój profil", format: "3–30 znaków: małe lub duże litery, cyfry albo _.", invalid: "Nazwa użytkownika musi mieć 3–30 znaków i zawierać tylko litery, cyfry albo _.", taken: "Ta nazwa użytkownika jest już zajęta.", error: "Nie udało się zapisać profilu.", constraintError: "Dane profilu nie spełniają wymagań. Sprawdź nazwę użytkownika, opis i zdjęcie.", permissionError: "Nie masz uprawnień do zapisania tego profilu. Odśwież stronę i zaloguj się ponownie.", saved: "Profil został zapisany.", imageError: "Wybierz plik JPG, PNG lub WebP o rozmiarze do 2 MB.", uploadError: "Nie udało się przesłać zdjęcia.", projects: "projekty", offers: "aktywne oferty", wanted: "szukam włóczki", editHint: "Wybierz maksymalnie 2 opcje." }
+    : { title: "My space", intro: "Your knitting profile on Dyeloty.", username: "Username", bio: "About me", preferences: "I love knitting", fibres: "Favourite fibres", since: "Knitting since", vibes: "Knitting vibe", edit: "Edit profile", closeEdit: "Close editing", addPhoto: "Add photo", changePhoto: "Change photo", save: "Save", view: "View my profile", format: "3–30 characters: uppercase or lowercase letters, numbers, or _.", invalid: "Username must be 3–30 characters and contain only letters, numbers, or _.", taken: "This username is already taken.", error: "Could not save the profile.", constraintError: "Your profile details do not meet the requirements. Check the username, bio, and photo.", permissionError: "You do not have permission to save this profile. Refresh the page and sign in again.", saved: "Profile saved.", imageError: "Choose a JPG, PNG, or WebP file up to 2 MB.", uploadError: "Could not upload the photo.", projects: "projects", offers: "active listings", wanted: "looking for yarn", editHint: "Choose up to 2 options." };
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [activeSection, setActiveSection] = useState<AccountSection>(() =>
@@ -84,10 +92,16 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
   const [publicProfile, setPublicProfile] = useState<PublicProfile | null>(null);
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [knittingPreferences, setKnittingPreferences] = useState<string[]>([]);
+  const [favoriteFibres, setFavoriteFibres] = useState<string[]>([]);
+  const [knittingSince, setKnittingSince] = useState("");
+  const [knittingVibes, setKnittingVibes] = useState<string[]>([]);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSavingPublicProfile, setIsSavingPublicProfile] = useState(false);
   const [publicProfileMessage, setPublicProfileMessage] = useState("");
+  const [projectCount, setProjectCount] = useState(0);
 
   useEffect(() => {
     return () => {
@@ -171,13 +185,17 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
   const loadPublicProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("user_id, username, avatar_url, bio")
+      .select("user_id, username, avatar_url, bio, knitting_preferences, favorite_fibres, knitting_since, knitting_vibes, role")
       .eq("user_id", userId)
       .maybeSingle<PublicProfile>();
 
     setPublicProfile(data ?? null);
     setUsername(data?.username ?? "");
     setBio(data?.bio ?? "");
+    setKnittingPreferences(data?.knitting_preferences ?? []);
+    setFavoriteFibres(data?.favorite_fibres ?? []);
+    setKnittingSince(data?.knitting_since ? String(data.knitting_since) : "");
+    setKnittingVibes(data?.knitting_vibes ?? []);
     setAvatarPreviewUrl(await getProfileAvatarUrl(data?.avatar_url));
   }, []);
 
@@ -276,14 +294,22 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
 
     const { data, error } = await supabase
       .from("profiles")
-      .upsert({ user_id: session.user.id, username: normalizedUsername, avatar_url: avatarPath, bio: bio.trim() || null }, { onConflict: "user_id" })
-      .select("user_id, username, avatar_url, bio")
+      .upsert({ user_id: session.user.id, username: normalizedUsername, avatar_url: avatarPath, bio: bio.trim() || null, knitting_preferences: knittingPreferences, favorite_fibres: favoriteFibres, knitting_since: knittingSince ? Number(knittingSince) : null, knitting_vibes: knittingVibes }, { onConflict: "user_id" })
+      .select("user_id, username, avatar_url, bio, knitting_preferences, favorite_fibres, knitting_since, knitting_vibes, role")
       .single<PublicProfile>();
     setIsSavingPublicProfile(false);
 
     if (error || !data) {
       if (avatarFile && avatarPath) await removeProfileAvatar(avatarPath, session.user.id);
-      setPublicProfileMessage(error?.code === "23505" ? profileT.taken : profileT.error);
+      if (error?.code === "23505") {
+        setPublicProfileMessage(profileT.taken);
+      } else if (error?.code === "23514") {
+        setPublicProfileMessage(profileT.constraintError);
+      } else if (error?.code === "42501") {
+        setPublicProfileMessage(profileT.permissionError);
+      } else {
+        setPublicProfileMessage(error?.message ? `${profileT.error} ${error.message}` : profileT.error);
+      }
       return;
     }
 
@@ -296,6 +322,8 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
     setUsername(data.username);
     setAvatarFile(null);
     setAvatarPreviewUrl(await getProfileAvatarUrl(data.avatar_url));
+    setIsEditingProfile(false);
+    window.dispatchEvent(new Event("dyeloty-profile-updated"));
     setPublicProfileMessage(profileT.saved);
   }
 
@@ -463,16 +491,28 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
         </div>
 
         <div className="rounded-2xl border border-[#E8E1F0] bg-white p-6 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#7438B7]">
-            Dyeloty
-          </p>
-          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{t.account}</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6E6582] sm:text-base">
-            {profileT.intro}
-          </p>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              {avatarPreviewUrl ? <img src={avatarPreviewUrl} alt="" className="h-20 w-20 shrink-0 rounded-full object-cover ring-4 ring-[#F4EEF9]" /> : <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-[#F4EEF9] text-[#7438B7]"><UserRound size={32} /></span>}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#7438B7]">Dyeloty</p>
+                <h1 className="mt-1 break-words text-3xl font-bold sm:text-4xl">{publicProfile?.username || t.account}</h1>
+                {publicProfile?.bio ? <p className="mt-2 max-w-2xl whitespace-pre-wrap text-sm leading-6 text-[#6E6582]">{publicProfile.bio}</p> : <p className="mt-2 text-sm text-[#8A7A9D]">{profileT.intro}</p>}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setIsEditingProfile((current) => !current)} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D8CCE7] px-4 text-sm font-semibold text-[#7438B7]">{isEditingProfile ? profileT.closeEdit : profileT.edit}</button>
+              {publicProfile ? <Link href={language === "pl" ? `/profile/${publicProfile.username}` : `/en/profile/${publicProfile.username}`} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#7438B7] px-4 text-sm font-semibold text-white">{profileT.view}</Link> : null}
+            </div>
+          </div>
+          <ProfileChips label={profileT.preferences} values={profileOptionLabels(publicProfile?.knitting_preferences ?? [], language, PROFILE_PREFERENCE_OPTIONS)} />
+          <ProfileChips label={profileT.fibres} values={profileOptionLabels(publicProfile?.favorite_fibres ?? [], language, PROFILE_FIBRE_OPTIONS)} />
+          <ProfileChips label={profileT.vibes} values={profileOptionLabels(publicProfile?.knitting_vibes ?? [], language, PROFILE_VIBE_OPTIONS)} />
+          {publicProfile?.knitting_since ? <p className="mt-3 text-sm text-[#6E6582]"><span className="font-semibold text-[#514A67]">{profileT.since}:</span> {publicProfile.knitting_since}</p> : null}
+          <dl className="mt-6 grid grid-cols-2 gap-3 sm:max-w-xl sm:grid-cols-3"><ProfileStat value={projectCount} label={profileT.projects} /><ProfileStat value={offerListings.filter((listing) => listing.status === "available").length} label={profileT.offers} /><ProfileStat value={wantedListings.filter((listing) => listing.status === "available").length} label={profileT.wanted} /></dl>
 
-          <form onSubmit={handleSavePublicProfile} className="mt-6 max-w-xl rounded-2xl bg-[#FAF8FC] p-5">
-            <h2 className="text-lg font-bold">{profileT.title}</h2>
+          {isEditingProfile ? <form onSubmit={handleSavePublicProfile} className="mt-6 max-w-2xl rounded-2xl bg-[#FAF8FC] p-5">
+            <h2 className="text-lg font-bold">{profileT.edit}</h2>
             <div className="mt-5 flex flex-wrap items-center gap-4">
               {avatarPreviewUrl ? <img src={avatarPreviewUrl} alt="" className="h-20 w-20 rounded-full object-cover" /> : <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white text-[#7438B7]"><UserRound size={32} /></span>}
               <label htmlFor="profileAvatar" className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-[#D8CCE7] px-5 text-sm font-semibold text-[#7438B7] transition hover:bg-[#F6F0FB]">
@@ -490,6 +530,10 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
               <textarea id="bio" value={bio} maxLength={300} onChange={(event) => setBio(event.target.value)} className="mt-2 min-h-24 w-full rounded-xl border border-[#DED6EA] bg-white p-4 text-sm text-[#17142E] outline-none transition focus:border-[#A875D2]" />
               <span className="mt-1 block text-right text-xs font-normal text-[#8A7A9D]">{bio.length}/300</span>
             </label>
+            <ProfileChoiceGroup label={profileT.preferences} values={knittingPreferences} options={PROFILE_PREFERENCE_OPTIONS} language={language} onToggle={(value) => setKnittingPreferences((current) => toggleProfileOption(current, value, 8))} />
+            <ProfileChoiceGroup label={profileT.fibres} values={favoriteFibres} options={PROFILE_FIBRE_OPTIONS} language={language} onToggle={(value) => setFavoriteFibres((current) => toggleProfileOption(current, value, 8))} />
+            <label htmlFor="knittingSince" className="mt-5 block text-sm font-semibold text-[#514A67]">{profileT.since}<input id="knittingSince" inputMode="numeric" type="number" min="1900" max="2100" value={knittingSince} onChange={(event) => setKnittingSince(event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-[#DED6EA] bg-white px-4 text-sm text-[#17142E]" /></label>
+            <ProfileChoiceGroup label={profileT.vibes} hint={profileT.editHint} values={knittingVibes} options={PROFILE_VIBE_OPTIONS} language={language} onToggle={(value) => setKnittingVibes((current) => toggleProfileOption(current, value, 2))} />
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 type="submit"
@@ -499,17 +543,9 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
                 {isSavingPublicProfile ? <Loader2 className="animate-spin" size={17} /> : null}
                 {profileT.save}
               </button>
-              {publicProfile ? (
-                <Link
-                  href={language === "pl" ? `/profile/${publicProfile.username}` : `/en/profile/${publicProfile.username}`}
-                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[#D8CCE7] px-5 text-sm font-semibold text-[#7438B7]"
-                >
-                  {profileT.view}
-                </Link>
-              ) : null}
             </div>
             {publicProfileMessage ? <p className="mt-3 text-sm text-[#6E6582]">{publicProfileMessage}</p> : null}
-          </form>
+          </form> : null}
 
           <button
             type="button"
@@ -521,7 +557,14 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
           </button>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-4 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-6">
+        <AccountProjects userId={session.user.id} language={language} onCountChange={setProjectCount} />
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-2">
+          <ListingPreview title={t.offers} items={offerListings.filter((listing) => listing.status === "available")} language={language} allLabel={language === "pl" ? "Zobacz wszystkie" : "View all"} />
+          <ListingPreview title={t.looking} items={wantedListings.filter((listing) => listing.status === "available")} language={language} allLabel={language === "pl" ? "Zobacz wszystkie" : "View all"} />
+        </section>
+
+        <div id="my-listings" className="mt-6 rounded-2xl border border-[#E8E1F0] bg-white p-4 shadow-[0_18px_55px_rgba(51,36,82,0.09)] sm:p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold">
@@ -784,7 +827,6 @@ export default function AccountPage({ language = "pl" }: { language?: "en" | "pl
             </div>
           )}
         </div>
-        <AccountProjects userId={session.user.id} language={language} />
       </section>
     </main>
   );
@@ -811,6 +853,24 @@ function AccountFact({ label, value }: { label: string; value: string | null }) 
       <dd className="mt-1 truncate font-semibold text-[#332B4D]">{value ?? "-"}</dd>
     </div>
   );
+}
+
+function ProfileStat({ value, label }: { value: number | string; label: string }) {
+  return <div className="rounded-xl bg-[#FAF8FC] p-3 text-center"><dd className="text-xl font-bold text-[#17142E]">{value}</dd><dt className="mt-1 text-xs text-[#6E6582]">{label}</dt></div>;
+}
+
+function ProfileChips({ label, values }: { label: string; values: string[] }) {
+  if (!values.length) return null;
+  return <div className="mt-4"><p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#8A7A9D]">{label}</p><div className="flex flex-wrap gap-2">{values.map((value) => <span key={value} className="rounded-full bg-[#F4EEF9] px-3 py-1.5 text-sm font-medium text-[#5E2D93]">{value}</span>)}</div></div>;
+}
+
+function ProfileChoiceGroup({ label, hint, values, options, language, onToggle }: { label: string; hint?: string; values: string[]; options: readonly { value: string; pl: string; en: string }[]; language: "en" | "pl"; onToggle: (value: string) => void }) {
+  return <fieldset className="mt-5"><legend className="text-sm font-semibold text-[#514A67]">{label}</legend>{hint ? <p className="mt-1 text-xs text-[#8A7A9D]">{hint}</p> : null}<div className="mt-3 flex flex-wrap gap-2">{options.map((option) => { const selected = values.includes(option.value); return <button key={option.value} type="button" onClick={() => onToggle(option.value)} className={`rounded-full border px-3 py-2 text-sm font-medium transition ${selected ? "border-[#7438B7] bg-[#7438B7] text-white" : "border-[#D8CCE7] bg-white text-[#514A67] hover:border-[#A875D2]"}`}>{option[language]}</button>; })}</div></fieldset>;
+}
+
+function ListingPreview({ title, items, language, allLabel }: { title: string; items: Listing[]; language: "en" | "pl"; allLabel: string }) {
+  const preview = items.slice(0, 3);
+  return <section className="rounded-2xl border border-[#E8E1F0] bg-white p-5 shadow-[0_12px_32px_rgba(51,36,82,0.07)]"><div className="flex items-center justify-between gap-3"><h2 className="text-xl font-bold">{title}</h2><a href="#my-listings" className="text-sm font-semibold text-[#7438B7]">{allLabel}</a></div>{preview.length ? <div className="mt-4 grid gap-2">{preview.map((listing) => <div key={listing.id} className="rounded-xl bg-[#FAF8FC] px-4 py-3"><p className="font-semibold text-[#332B4D]">{listing.brand ?? "-"}</p><p className="mt-0.5 truncate text-sm text-[#6E6582]">{listing.yarn_name ?? "-"}{listing.dyelot ? ` · ${listing.dyelot}` : ""}</p></div>)}</div> : <p className="mt-4 rounded-xl bg-[#FAF8FC] p-4 text-sm text-[#6E6582]">{language === "pl" ? "Jeszcze nic tutaj nie ma." : "Nothing here yet."}</p>}</section>;
 }
 
 function getInitialAccountSection(): AccountSection {
